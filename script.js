@@ -31,14 +31,9 @@ function triggerHaptic(type = 'light') {
     }
 }
 
-const defaultReviews = [
-    { author: 'Максим', stars: '5', text: 'Отличный продавец! Быстро ответил и быстро отправил товар.' },
-    { author: 'Елена', stars: '5', text: 'Все соответствовало описанию. Очень довольна покупкой!' }
-];
-
 let products = [];
 let favorites = JSON.parse(localStorage.getItem('my_marketplace_favorites')) || [];
-let reviews = JSON.parse(localStorage.getItem('my_marketplace_reviews')) || defaultReviews;
+let reviews = [];
 let currentUser = JSON.parse(localStorage.getItem('my_marketplace_user')) || null;
 
 let currentCategory = 'all';
@@ -46,9 +41,9 @@ let currentCityFilter = 'all';
 let editingProductId = null;
 let currentImageIndex = 0;
 let currentProductImages = [];
+let pendingDeleteId = null; // ID товара, который удаляется прямо сейчас
 
 let isDarkTheme = localStorage.getItem('my_marketplace_theme') === 'dark';
-
 let activeSellerData = { name: '', telegram: '' };
 
 function hideLoader() {
@@ -58,7 +53,7 @@ function hideLoader() {
     }
 }
 
-// ПОДПИСКА НА FIREBASE В РЕАЛЬНОМ ВРЕМЕНИ
+// ПОДПИСКА НА FIREBASE (ТОВАРЫ)
 function listenFirebaseProducts() {
     db.collection("products")
       .orderBy("createdAt", "desc")
@@ -82,8 +77,92 @@ function listenFirebaseProducts() {
 
           hideLoader();
       }, (err) => {
-          console.error("Ошибка Firebase:", err);
+          console.error("Ошибка Firebase (продукты):", err);
           hideLoader();
+      });
+}
+
+// ПОДПИСКА НА FIREBASE (ОТЗЫВЫ)
+function listenFirebaseReviews() {
+    db.collection("reviews")
+      .orderBy("createdAt", "desc")
+      .onSnapshot((snapshot) => {
+          reviews = [];
+          snapshot.forEach((doc) => {
+              reviews.push({ id: doc.id, ...doc.data() });
+          });
+          renderReviews();
+      }, (err) => {
+          console.error("Ошибка Firebase (отзывы):", err);
+      });
+}
+
+// ПРОВЕРКА ПЕНДИНГ-ОТЗЫВОВ ДЛЯ ПОКУПАТЕЛЯ ПРИ ВХОДЕ
+function checkPendingReviewRequests() {
+    if (!currentUser || !currentUser.username) return;
+
+    const cleanMyTg = currentUser.username.replace('@', '').toLowerCase();
+
+    db.collection("pendingReviews")
+      .where("buyerUsername", "==", cleanMyTg)
+      .where("completed", "==", false)
+      .get()
+      .then((querySnapshot) => {
+          if (!querySnapshot.empty) {
+              // Берем первую сделку, по которой еще не оставлен отзыв
+              const doc = querySnapshot.docs[0];
+              const data = doc.data();
+              
+              const reviewModal = document.getElementById('leave-review-modal');
+              const descEl = document.getElementById('leave-review-desc');
+              if (descEl) {
+                  descEl.textContent = `Вы купили товар "${data.productTitle}" у продавца @${data.sellerTelegram}. Пожалуйста, оставьте отзыв.`;
+              }
+              if (reviewModal) {
+                  reviewModal.classList.remove('hidden');
+              }
+
+              // Обработка кнопки отправки отзыва
+              const submitBtn = document.getElementById('submit-review-btn');
+              const cancelBtn = document.getElementById('cancel-review-btn');
+
+              submitBtn.onclick = async () => {
+                  const stars = document.getElementById('review-stars-select').value;
+                  const text = document.getElementById('review-text-input').value.trim();
+
+                  if (!text) {
+                      alert('Напишите пару слов о сделке!');
+                      return;
+                  }
+
+                  try {
+                      // Добавляем отзыв в общую базу отзывов продавцу
+                      await db.collection("reviews").add({
+                          sellerTelegram: data.sellerTelegram,
+                          author: currentUser.name,
+                          stars: stars,
+                          text: text,
+                          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                      });
+
+                      // Отмечаем запрос как выполненный
+                      await db.collection("pendingReviews").doc(doc.id).update({ completed: true });
+
+                      triggerHaptic('success');
+                      reviewModal.classList.add('hidden');
+                      alert('Спасибо за ваш отзыв!');
+                  } catch (e) {
+                      console.error("Ошибка сохранения отзыва:", e);
+                  }
+              };
+
+              cancelBtn.onclick = () => {
+                  reviewModal.classList.add('hidden');
+              };
+          }
+      })
+      .catch((err) => {
+          console.error("Ошибка проверки запросов на отзыв:", err);
       });
 }
 
@@ -101,7 +180,6 @@ function applyTheme() {
 function saveToStorage() {
     try {
         localStorage.setItem('my_marketplace_favorites', JSON.stringify(favorites));
-        localStorage.setItem('my_marketplace_reviews', JSON.stringify(reviews));
         localStorage.setItem('my_marketplace_theme', isDarkTheme ? 'dark' : 'light');
         if (currentUser) {
             localStorage.setItem('my_marketplace_user', JSON.stringify(currentUser));
@@ -109,7 +187,7 @@ function saveToStorage() {
             localStorage.removeItem('my_marketplace_user');
         }
     } catch (e) {
-        console.warn('Очищаем старые данные...');
+        console.warn('LocalStorage error:', e);
     }
 }
 
@@ -124,6 +202,7 @@ function checkAuth() {
         renderProfile();
         renderMyProductsTab();
         filterAndRender();
+        checkPendingReviewRequests(); // Проверяем, должен ли этот юзер оставить отзыв
     } else {
         authScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
@@ -149,7 +228,7 @@ function setupAuthScreen() {
         }
     } else {
         tgBox.classList.add('hidden');
-        guestBox.classList.remove('hidden');
+        guestBox.classList.add('hidden');
     }
 }
 
@@ -413,7 +492,8 @@ window.toggleFavorite = function(event, id) {
     }
 };
 
-window.deleteProduct = async function(event, id) {
+// ШАГ 1: НАЖАТИЕ НА КРЕСТИК (УДАЛЕНИЕ ТОВАРА) -> ВЫЗОВ ОКНА ВВОДА ПОКУПАТЕЛЯ
+window.deleteProduct = function(event, id) {
     event.stopPropagation();
     
     const product = products.find(p => p.id === id);
@@ -428,17 +508,45 @@ window.deleteProduct = async function(event, id) {
         return;
     }
 
-    if (!confirm("Вы уверены, что хотите удалить это объявление?")) return;
+    pendingDeleteId = id; // Сохраняем ID товара
+    const buyerModal = document.getElementById('buyer-modal');
+    if (buyerModal) {
+        document.getElementById('buyer-username-input').value = '';
+        buyerModal.classList.remove('hidden');
+    }
+};
+
+// УДАЛЕНИЕ ИЗ ФИРЕБЕЙС И СОХРАНЕНИЕ ЗАПРОСА НА ОТЗЫВ
+async function finalizeProductDeletion(buyerUsername) {
+    if (!pendingDeleteId) return;
+
+    const product = products.find(p => p.id === pendingDeleteId);
 
     try {
-        await db.collection("products").doc(id).delete();
-        favorites = favorites.filter(favId => favId !== id);
+        if (product && buyerUsername) {
+            let cleanBuyer = buyerUsername.trim().replace('@', '').toLowerCase();
+            let sellerTg = (currentUser?.username || '').toLowerCase();
+
+            // Создаем задачу для отзыва покупателю
+            await db.collection("pendingReviews").add({
+                productTitle: product.title,
+                sellerTelegram: sellerTg,
+                buyerUsername: cleanBuyer,
+                completed: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        await db.collection("products").doc(pendingDeleteId).delete();
+        favorites = favorites.filter(favId => favId !== pendingDeleteId);
         triggerHaptic('warning');
         saveToStorage();
     } catch (err) {
         console.error("Ошибка удаления:", err);
     }
-};
+
+    pendingDeleteId = null;
+}
 
 window.handleTelegramClick = function(event, rawTg, productTitle, productPrice) {
     if (event) event.preventDefault();
@@ -548,7 +656,6 @@ window.openViewModal = function(id) {
 function closeViewModal() {
     triggerHaptic('light');
     document.getElementById('view-modal').classList.add('hidden');
-    // Скрываем главную кнопку Telegram при закрытии модалки товара
     if (tg?.MainButton) {
         tg.MainButton.hide();
     }
@@ -572,7 +679,6 @@ function openEditModal() {
     document.getElementById('telegram-input').value = product.telegram || '';
     document.getElementById('desc-input').value = product.description || '';
 
-    document.getElementById('modal').classList.add('hidden'); // исправлено сокрытие
     document.getElementById('modal').classList.remove('hidden');
 }
 
@@ -704,6 +810,27 @@ document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
     checkAuth();
     listenFirebaseProducts();
+    listenFirebaseReviews();
+
+    // Обработка кнопок модалки ввода покупателя при удалении
+    const saveBuyerBtn = document.getElementById('save-buyer-btn');
+    const skipBuyerBtn = document.getElementById('skip-buyer-btn');
+    const buyerModal = document.getElementById('buyer-modal');
+
+    if (saveBuyerBtn) {
+        saveBuyerBtn.onclick = async () => {
+            const buyerInput = document.getElementById('buyer-username-input').value.trim();
+            buyerModal.classList.add('hidden');
+            await finalizeProductDeletion(buyerInput);
+        };
+    }
+
+    if (skipBuyerBtn) {
+        skipBuyerBtn.onclick = async () => {
+            buyerModal.classList.add('hidden');
+            await finalizeProductDeletion(null);
+        };
+    }
 
     const sellerCardClickable = document.getElementById('seller-card-clickable');
     const viewModal = document.getElementById('view-modal');
@@ -714,7 +841,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sellerCardClickable.onclick = () => {
             triggerHaptic('light');
             
-            // Скрываем MainButton при переходе из модалки товара в профиль продавца
             if (tg?.MainButton) {
                 tg.MainButton.hide();
             }
