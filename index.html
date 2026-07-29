@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Маркетплейс</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ЭКРАН АВТОРИЗАЦИИ -->
+    <div id="auth-screen" class="auth-screen">
+        <div class="auth-card">
+            <div class="auth-logo">🛍️</div>
+            <h1 class="auth-title">Маркетплейс</h1>
+            <p class="auth-subtitle">Покупайте и продавайте товары прямо внутри Telegram</p>
+
+            <div id="tg-auth-box" class="auth-box">
+                <div class="user-preview">
+                    <div class="preview-avatar" id="auth-avatar">👤</div>
+                    <div class="preview-info">
+                        <div class="preview-name" id="auth-name">Гость</div>
+                        <div class="preview-username" id="auth-username">@username</div>
+                    </div>
+                </div>
+                <button id="tg-login-btn" class="auth-btn tg-btn">Войти через Telegram</button>
+            </div>
+
+            <div id="guest-auth-box" class="auth-box hidden">
+                <input type="text" id="guest-name-input" placeholder="Ваше имя" class="auth-input">
+                <input type="text" id="guest-tg-input" placeholder="Telegram @username" class="auth-input">
+                <button id="guest-login-btn" class="auth-btn">Продолжить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+    <div id="app" class="hidden">
+        <!-- ВКЛАДКА 1: Все объявления -->
+        <div id="tab-home" class="tab-content">
+            <header class="header">
+                <div class="search-row">
+                    <input type="text" placeholder="Поиск товаров..." class="search-input">
+                    <select id="city-filter" class="city-select">
+                        <option value="all">📍 Все города</option>
+                        <option value="Минск">Минск</option>
+                        <option value="Брест">Брест</option>
+                        <option value="Гродно">Гродно</option>
+                        <option value="Гомель">Гомель</option>
+                        <option value="Витебск">Витебск</option>
+                        <option value="Могилев">Могилев</option>
+                    </select>
+                    <button id="theme-toggle" class="theme-btn">🌙</button>
+                </div>
+                
+                <div class="categories-bar">
+                    <button class="cat-btn active" data-cat="all">Все</button>
+                    <button class="cat-btn fav-cat-btn" data-cat="favorites">❤️ Избранное</button>
+                    <button class="cat-btn" data-cat="Электроника">Электроника</button>
+                    <button class="cat-btn" data-cat="Одежда">Одежда</button>
+                    <button class="cat-btn" data-cat="Авто">Авто</button>
+                    <button class="cat-btn" data-cat="Другое">Другое</button>
+                </div>
+            </header>
+
+            <main class="products-grid" id="products"></main>
+
+            <button id="open-modal-btn" class="add-btn">+</button>
+        </div>
+
+        <!-- ВКЛАДКА 2: Мои объявления -->
+        <div id="tab-my-ads" class="tab-content hidden">
+            <header class="header">
+                <h2 class="section-title">Мои объявления</h2>
+            </header>
+            <main class="products-grid" id="my-products-tab-grid"></main>
+        </div>
+
+        <!-- ВКЛАДКА 3: Профиль пользователя -->
+        <div id="tab-profile" class="tab-content hidden">
+            <div class="profile-card">
+                <div class="profile-avatar" id="user-avatar">👤</div>
+                <h2 class="profile-name" id="user-name">Гость</h2>
+                <div class="profile-username" id="user-tg-tag">@username</div>
+                
+                <!-- Бейдж верификации -->
+                <div class="profile-badge unverified" id="profile-badge">❌ Профиль не подтвержден</div>
+                <button id="open-verify-btn" class="verify-action-btn">📱 Пройти верификацию</button>
+
+                <div class="profile-joined">На маркетплейсе с 2024 года</div>
+
+                <!-- Рейтинг -->
+                <div class="rating-box">
+                    <span class="rating-score" id="profile-rating-score">4.9</span>
+                    <span class="rating-stars">⭐⭐⭐⭐⭐</span>
+                    <span class="rating-count" id="profile-reviews-count">(0 отзывов)</span>
+                </div>
+
+                <button id="logout-btn" class="logout-btn">Выйти из аккаунта</button>
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="my-ads-count">0</div>
+                    <div class="stat-label">Объявлений</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="fav-ads-count">0</div>
+                    <div class="stat-label">В избранном</div>
+                </div>
+            </div>
+
+            <!-- Внутреннее меню профиля -->
+            <div class="profile-tabs-bar">
+                <button class="p-tab-btn active" data-ptab="my-products-sec">Объявления</button>
+                <button class="p-tab-btn" data-ptab="reviews-sec">Отзывы</button>
+            </div>
+
+            <!-- Секция 1: Мои объявления -->
+            <div id="my-products-sec" class="profile-section">
+                <div class="products-grid" id="my-products"></div>
+            </div>
+
+            <!-- Секция 2: Отзывы -->
+            <div id="reviews-sec" class="profile-section hidden">
+                <div id="reviews-list" class="reviews-list"></div>
+            </div>
+        </div>
+
+        <!-- Нижняя навигация (Bottom Bar) -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-tab="tab-home">
+                <span class="nav-icon">🛍️</span>
+                <span class="nav-label">Объявления</span>
+            </button>
+            <button class="nav-item" data-tab="tab-my-ads">
+                <span class="nav-icon">📦</span>
+                <span class="nav-label">Мои товары</span>
+            </button>
+            <button class="nav-item" data-tab="tab-profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Профиль</span>
+            </button>
+        </nav>
+
+        <!-- Модалка Верификации -->
+        <div id="verify-modal" class="modal hidden">
+            <div class="modal-content verify-modal-content">
+                <div class="verify-icon">🛡️</div>
+                <h2>Верификация профиля</h2>
+                <p class="verify-desc">Подтвердите ваш номер телефона, чтобы получить синий значок доверия и продавать товары быстрее.</p>
+
+                <div class="form-body">
+                    <button type="button" id="confirm-tg-phone-btn" class="btn-primary tg-btn-phone">
+                        📱 Подтвердить через Telegram
+                    </button>
+
+                    <div class="or-divider">или введите номер вручную</div>
+
+                    <input type="text" id="manual-phone-input" placeholder="+375 (29) 000-00-00" class="auth-input">
+
+                    <div class="modal-buttons">
+                        <button type="button" id="close-verify-modal-btn" class="btn-secondary">Отмена</button>
+                        <button type="button" id="save-manual-phone-btn" class="btn-primary">Подтвердить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модалка добавления / редактирования товара -->
+        <div id="modal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="modal-title">Добавить объявление</h2>
+                <div class="form-body">
+                    <input type="text" id="title-input" placeholder="Название товара">
+                    <input type="text" id="price-input" placeholder="Цена (например, 1500)">
+                    
+                    <select id="category-select" class="select-input">
+                        <option value="Электроника">Электроника</option>
+                        <option value="Одежда">Одежда</option>
+                        <option value="Авто">Авто</option>
+                        <option value="Другое" selected>Другое</option>
+                    </select>
+
+                    <select id="city-select" class="select-input">
+                        <option value="Минск" selected>Минск</option>
+                        <option value="Брест">Брест</option>
+                        <option value="Гродно">Гродно</option>
+                        <option value="Гомель">Гомель</option>
+                        <option value="Витебск">Витебск</option>
+                        <option value="Могилев">Могилев</option>
+                    </select>
+
+                    <input type="text" id="seller-input" placeholder="Имя продавца">
+                    <input type="text" id="telegram-input" placeholder="Юзернейм в Telegram (например, mark_123)">
+                    <textarea id="desc-input" placeholder="Описание товара..." rows="3"></textarea>
+                    
+                    <label class="file-label">
+                        Выберите фото (до 4 шт)
+                        <input type="file" id="image-file-input" accept="image/*" multiple hidden>
+                    </label>
+                    <div id="file-name" class="file-name">Файлы не выбраны</div>
+                    
+                    <div class="modal-buttons">
+                        <button type="button" id="close-modal-btn" class="btn-secondary">Отмена</button>
+                        <button type="button" id="save-btn" class="btn-primary">Опубликовать</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модалка просмотра товара -->
+        <div id="view-modal" class="modal hidden">
+            <div class="modal-content view-content">
+                <button type="button" id="close-view-btn" class="close-view-btn">✕</button>
+                
+                <div class="gallery-container">
+                    <img id="view-image" class="view-image" src="" alt="">
+                    <button id="prev-img-btn" class="gallery-nav prev-btn">‹</button>
+                    <button id="next-img-btn" class="gallery-nav next-btn">›</button>
+                    <div id="gallery-dots" class="gallery-dots"></div>
+                </div>
+                
+                <div class="view-badges">
+                    <span class="view-category-badge" id="view-category"></span>
+                    <span class="view-city-badge" id="view-city">📍 Минск</span>
+                </div>
+                
+                <div class="view-price" id="view-price"></div>
+                <h2 class="view-title" id="view-title"></h2>
+                
+                <div class="seller-card">
+                    <div class="seller-avatar">👤</div>
+                    <div class="seller-info">
+                        <div class="seller-name" id="view-seller">Продавец</div>
+                        <div class="seller-tg" id="view-telegram">Telegram не указан</div>
+                    </div>
+                </div>
+
+                <div class="view-description-title">Описание</div>
+                <p class="view-description" id="view-desc"></p>
+
+                <div class="view-actions">
+                    <button type="button" id="edit-btn" class="edit-view-btn">✏️ Редактировать</button>
+                    <a id="contact-btn" href="#" class="contact-tg-btn">💬 Написать в Telegram</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
