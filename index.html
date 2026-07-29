@@ -148,13 +148,18 @@
         <button id="open-modal-btn" class="add-btn">+</button>
     </div>
 
-    <!-- Модалка: Указание покупателя при удалении товара -->
+    <!-- Модалка: Выбор покупателя из списка просмотров при удалении -->
     <div id="buyer-modal" class="modal hidden">
         <div class="modal-content verify-modal-content">
             <div class="verify-icon">🤝</div>
             <h2>Товар продан?</h2>
-            <p class="verify-desc">Укажите @username покупателя, чтобы он смог оставить вам отзыв о сделке.</p>
+            <p class="verify-desc">Выберите покупателя из списка тех, кто за последние дни просматривал этот товар:</p>
             
+            <div id="recent-viewers-list" class="viewers-list">
+                <!-- Сюда динамически добавятся пользователи -->
+            </div>
+
+            <div class="or-divider">или введите вручную</div>
             <input type="text" id="buyer-username-input" class="auth-input" placeholder="@username покупателя" style="margin-bottom: 12px;">
             
             <div class="modal-buttons" style="display: flex; gap: 10px;">
