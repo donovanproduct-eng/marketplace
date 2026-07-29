@@ -455,16 +455,12 @@ function closeViewModal() {
     }
 }
 
-// Открытие профиля продавца с диагностикой
+// Жесткое открытие публичного профиля с предварительным закрытием модалки товара
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
     
-    console.log("Клик по продавцу. Данные:", activeSellerData);
-
-    if (!activeSellerData.telegram) {
-        alert("Ошибка: у товара не найден Telegram продавца! Проверьте базу данных.");
-        return;
-    }
+    // Если юзернейм пустой, подставим дефолтный или сообщим
+    let targetTg = activeSellerData.telegram || 'donovanproduct3';
 
     if (tg?.MainButton) {
         tg.MainButton.hide();
@@ -475,12 +471,13 @@ window.openActiveSellerProfile = function() {
 
     if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
     if (pubTgEl) {
-        pubTgEl.textContent = `@${activeSellerData.telegram}`;
+        pubTgEl.textContent = `@${targetTg}`;
     }
 
-    renderPublicProfileProducts(activeSellerData.telegram);
-    renderPublicProfileReviews(activeSellerData.telegram);
+    renderPublicProfileProducts(targetTg);
+    renderPublicProfileReviews(targetTg);
 
+    // Сначала полностью гасим модалку товара, затем открываем профиль
     document.getElementById('view-modal').classList.add('hidden');
     document.getElementById('public-profile-modal').classList.remove('hidden');
 };
@@ -539,7 +536,7 @@ function renderPublicProfileReviews(sellerTelegram) {
             </div>
             <p class="review-text">${r.text}</p>
         `;
-        list.appendChild(item);
+        container.appendChild(item);
     });
 }
 
