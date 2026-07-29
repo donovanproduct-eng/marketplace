@@ -33,7 +33,8 @@ function triggerHaptic(type = 'light') {
 
 let products = [];
 let favorites = JSON.parse(localStorage.getItem('my_marketplace_favorites')) || [];
-let allReviews = []; // Все отзывы из базы
+let allReviews = [];
+let myPurchases = []; // Список купленных товаров пользователя
 let currentUser = JSON.parse(localStorage.getItem('my_marketplace_user')) || null;
 
 let currentCategory = 'all';
@@ -91,16 +92,34 @@ function listenFirebaseReviews() {
           snapshot.forEach((doc) => {
               allReviews.push({ id: doc.id, ...doc.data() });
           });
-          renderProfile(); // Обновляет отзывы в личном профиле
+          renderProfile();
           if (activeSellerData.telegram) {
-              renderPublicProfileReviews(activeSellerData.telegram); // Обновляет в чужом
+              renderPublicProfileReviews(activeSellerData.telegram);
           }
       }, (err) => {
           console.error("Ошибка Firebase (отзывы):", err);
       });
 }
 
-// ФИКСАЦИЯ ПРОСМОТРА ТОВАРА ПОЛЬЗОВАТЕЛЕМ
+// ПОДПИСКА НА ПОКУПКИ ПОЛЬЗОВАТЕЛЯ
+function listenFirebasePurchases() {
+    if (!currentUser || !currentUser.username) return;
+    const cleanMyTg = currentUser.username.replace('@', '').toLowerCase();
+
+    db.collection("purchases")
+      .where("buyerUsername", "==", cleanMyTg)
+      .onSnapshot((snapshot) => {
+          myPurchases = [];
+          snapshot.forEach((doc) => {
+              myPurchases.push({ id: doc.id, ...doc.data() });
+          });
+          renderPurchasesTab();
+      }, (err) => {
+          console.error("Ошибка Firebase (покупки):", err);
+      });
+}
+
+// ФИКСАЦИЯ ПРОСМОТРА ТОВАРА
 async function logProductView(productId) {
     if (!currentUser || !currentUser.username) return;
 
@@ -122,7 +141,7 @@ async function logProductView(productId) {
     }
 }
 
-// ПРОВЕРКА ПЕНДИНГ-ОТЗЫВОВ ДЛЯ ПОКУПАТЕЛЯ ПРИ ВХОДЕ
+// ПРОВЕРКА ПЕНДИНГ-ОТЗЫВОВ
 function checkPendingReviewRequests() {
     if (!currentUser || !currentUser.username) return;
 
@@ -159,7 +178,6 @@ function checkPendingReviewRequests() {
                   }
 
                   try {
-                      // Сохраняем отзыв строго с привязкой к продавцу (sellerTelegram)
                       await db.collection("reviews").add({
                           sellerTelegram: data.sellerTelegram.toLowerCase(),
                           author: currentUser.name,
@@ -224,6 +242,7 @@ function checkAuth() {
         renderProfile();
         renderMyProductsTab();
         filterAndRender();
+        listenFirebasePurchases();
         checkPendingReviewRequests();
     } else {
         authScreen.classList.remove('hidden');
@@ -327,7 +346,85 @@ async function completeVerification(phone) {
     }
 }
 
-// ОТРИСОВКА ОТЗЫВОВ ДЛЯ СОБСТВЕННОГО ПРОФИЛЯ
+// ОТРИСОВКА ВКЛАДКИ «МОИ ПОКУПКИ»
+function renderPurchasesTab() {
+    const container = document.getElementById('my-purchases-grid');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (myPurchases.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px 20px;">У вас пока нет купленных товаров</div>';
+        return;
+    }
+
+    myPurchases.forEach(item => {
+        const mainImage = (item.images && item.images.length > 0) ? item.images[0] : 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300';
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        
+        // При клике на купленный товар — открываем его модалку, чтобы выйти на продавца
+        card.onclick = () => openPurchasedViewModal(item);
+
+        card.innerHTML = `
+            <img class="product-image" src="${mainImage}" alt="${item.title}">
+            <div class="product-title">${item.title}</div>
+            <div class="product-city">📍 ${item.city || 'Минск'}</div>
+            <div class="product-price">${item.price}</div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// СПЕЦИАЛЬНОЕ ОТКРЫТИЕ МОДАЛКИ ДЛЯ КУПЛЕННОГО ТОВАРА (ЧТОБЫ РАБОТАЛА СВЯЗЬ С ПРОДАВЦОМ)
+window.openPurchasedViewModal = function(product) {
+    triggerHaptic('light');
+    
+    currentProductImages = product.images || ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
+    currentImageIndex = 0;
+
+    updateGallery();
+
+    document.getElementById('view-title').textContent = product.title;
+    document.getElementById('view-price').textContent = product.price;
+    document.getElementById('view-category').textContent = product.category || 'Другое';
+    document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
+    document.getElementById('view-seller').textContent = product.seller || 'Продавец';
+    
+    let tgUser = product.telegram ? ('@' + product.telegram.replace('@', '')) : 'Telegram не указан';
+    document.getElementById('view-telegram').textContent = tgUser;
+    document.getElementById('view-desc').textContent = product.description || 'Описание отсутствует';
+
+    activeSellerData = {
+        name: product.seller || 'Продавец',
+        telegram: product.telegram || ''
+    };
+
+    // В покупках кнопку «Изменить» прячем всегда (товар уже куплен и удален из каталога)
+    document.getElementById('edit-btn').style.display = 'none';
+
+    const contactBtn = document.getElementById('contact-btn');
+    if (product.telegram && product.telegram.trim() !== '') {
+        contactBtn.onclick = (e) => handleTelegramClick(e, product.telegram, product.title, product.price);
+        contactBtn.style.opacity = '1';
+        contactBtn.style.pointerEvents = 'auto';
+
+        if (tg?.MainButton) {
+            tg.MainButton.setText(`💬 Написать продавцу (${product.price})`);
+            tg.MainButton.show();
+            tg.MainButton.onClick(() => {
+                handleTelegramClick(null, product.telegram, product.title, product.price);
+            });
+        }
+    } else {
+        contactBtn.onclick = null;
+        contactBtn.style.opacity = '0.5';
+        contactBtn.style.pointerEvents = 'none';
+        if (tg?.MainButton) tg.MainButton.hide();
+    }
+
+    document.getElementById('view-modal').classList.remove('hidden');
+};
+
 function renderReviews() {
     const list = document.getElementById('reviews-list');
     if (!list || !currentUser) return;
@@ -358,7 +455,6 @@ function renderReviews() {
     });
 }
 
-// ОТРИСОВКА ОТЗЫВОВ ДЛЯ ЧУЖОГО (ПУБЛИЧНОГО) ПРОФИЛЯ
 function renderPublicProfileReviews(sellerTelegram) {
     const container = document.querySelector('#public-profile-modal #pub-sec-reviews .reviews-list');
     if (!container) return;
@@ -383,7 +479,7 @@ function renderPublicProfileReviews(sellerTelegram) {
             </div>
             <p class="review-text">${r.text}</p>
         `;
-        container.appendChild(item);
+        list.appendChild(item);
     });
 }
 
@@ -636,6 +732,7 @@ window.deleteProduct = function(event, id) {
     }
 };
 
+// СОХРАНЕНИЕ ПОКУПКИ И СОЗДАНИЕ ЗАПРОСА НА ОТЗЫВ ПРИ УДАЛЕНИИ
 async function finalizeProductDeletion(buyerUsername) {
     if (!pendingDeleteId) return;
 
@@ -646,6 +743,21 @@ async function finalizeProductDeletion(buyerUsername) {
             let cleanBuyer = buyerUsername.trim().replace('@', '').toLowerCase();
             let sellerTg = (currentUser?.username || '').toLowerCase();
 
+            // 1. Сохраняем товар в историю покупок покупателя
+            await db.collection("purchases").add({
+                buyerUsername: cleanBuyer,
+                title: product.title,
+                price: product.price,
+                category: product.category || 'Другое',
+                city: product.city || 'Минск',
+                seller: product.seller || 'Продавец',
+                telegram: product.telegram || '',
+                description: product.description || '',
+                images: product.images || [],
+                purchasedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // 2. Создаем задачу для отзыва покупателю
             await db.collection("pendingReviews").add({
                 productTitle: product.title,
                 sellerTelegram: sellerTg,
@@ -974,7 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             renderPublicProfileProducts(activeSellerData.telegram);
-            renderPublicProfileReviews(activeSellerData.telegram); // Подтягиваем индивидуальные отзывы продавца
+            renderPublicProfileReviews(activeSellerData.telegram);
 
             if (viewModal) viewModal.classList.add('hidden');
             if (publicProfileModal) publicProfileModal.classList.remove('hidden');
