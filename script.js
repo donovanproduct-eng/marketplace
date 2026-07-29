@@ -523,13 +523,14 @@ function renderProducts(itemsToRender) {
     });
 }
 
+// УЛУЧШЕННОЕ СЖАТИЕ ФОТОГРАФИЙ БЕЗ ПОТЕРИ КАЧЕСТВА
 function compressImage(file, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const maxDim = 300;
+            const maxDim = 1080; // Качество 1080p
             let width = img.width;
             let height = img.height;
 
@@ -549,9 +550,11 @@ function compressImage(file, callback) {
             canvas.height = height;
 
             const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
             
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
             callback(compressedDataUrl);
         };
         img.onerror = function() { callback(null); };
