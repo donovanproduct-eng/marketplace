@@ -693,3 +693,17 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+/* Стили для корректного отображения списка товаров внутри модалки профиля */
+#public-profile-modal .profile-section {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 12px;
+}
+
+#public-profile-modal .products-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 4px;
+}
