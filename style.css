@@ -376,8 +376,18 @@ body {
     background: var(--card-bg);
     padding: 12px;
     border-radius: 12px;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--border-color);
     text-align: center;
+    cursor: pointer;
+    transition: transform 0.1s ease, border-color 0.2s ease;
+}
+
+.stat-card:active {
+    transform: scale(0.97);
+}
+
+.stat-card.active-stat {
+    border-color: #007aff;
 }
 
 .stat-value { font-size: 20px; font-weight: 800; color: #007aff; }
@@ -626,6 +636,13 @@ body {
     padding: 12px;
     border-radius: 10px;
     margin-bottom: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.seller-card:active {
+    background-color: var(--border-color);
+    transform: scale(0.98);
 }
 
 .seller-avatar { font-size: 24px; margin-right: 12px; }
