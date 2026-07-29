@@ -101,12 +101,11 @@ function listenFirebaseReviews() {
 async function logProductView(productId) {
     if (!currentUser || !currentUser.username) return;
 
-    // Не логируем просмотры своих же товаров
     const product = products.find(p => p.id === productId);
     if (!product) return;
     let pTg = (product.telegram || '').replace('@', '').toLowerCase();
     let myTg = (currentUser.username || '').toLowerCase();
-    if (pTg === myTg) return;
+    if (pTg === myTg) return; // Свои просмотры не пишем
 
     try {
         await db.collection("productViews").add({
@@ -511,17 +510,16 @@ window.toggleFavorite = function(event, id) {
     }
 };
 
-// ЗАГРУЗКА СПИСКА ПРОСМОТРОВ ДЛЯ МОДАЛКИ УДАЛЕНИЯ
+// ЗАГРУЗКА СПИСКА ПРОСМОТРОВ БЕЗ ЗАВИСИМОСТИ ОТ СОСТАВНОГО ИНДЕКСА
 async function loadRecentViewersForProduct(productId) {
     const listContainer = document.getElementById('recent-viewers-list');
     if (!listContainer) return;
     listContainer.innerHTML = '<div style="font-size: 13px; color: var(--text-muted); text-align: center;">Загрузка списка...</div>';
 
     try {
+        // Загружаем просмотры только по productId без orderBy, чтобы избежать ошибки индексов Firebase
         const snapshot = await db.collection("productViews")
             .where("productId", "==", productId)
-            .orderBy("createdAt", "desc")
-            .limit(10)
             .get();
 
         listContainer.innerHTML = '';
@@ -531,16 +529,28 @@ async function loadRecentViewersForProduct(productId) {
             return;
         }
 
-        // Уникальные пользователи по юзернейму
-        const seenUsers = new Set();
-
+        // Собираем все документы и сортируем в JavaScript по дате (сначала свежие)
+        let views = [];
         snapshot.forEach(doc => {
-            const data = doc.data();
+            views.push(doc.data());
+        });
+
+        views.sort((a, b) => {
+            let timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+            let timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+            return timeB - timeA;
+        });
+
+        const seenUsers = new Set();
+        let addedCount = 0;
+
+        views.forEach(data => {
             const username = data.viewerUsername;
             const name = data.viewerName || username;
 
-            if (username && !seenUsers.has(username)) {
+            if (username && !seenUsers.has(username) && addedCount < 10) {
                 seenUsers.add(username);
+                addedCount++;
 
                 const chip = document.createElement('div');
                 chip.className = 'viewer-chip';
@@ -549,7 +559,6 @@ async function loadRecentViewersForProduct(productId) {
                 chip.onclick = () => {
                     document.getElementById('buyer-username-input').value = username;
                     triggerHaptic('light');
-                    // Подсветим выбранный
                     document.querySelectorAll('.viewer-chip').forEach(c => c.style.borderColor = 'transparent');
                     chip.style.borderColor = '#007aff';
                     chip.style.borderWidth = '1.5px';
@@ -559,6 +568,10 @@ async function loadRecentViewersForProduct(productId) {
                 listContainer.appendChild(chip);
             }
         });
+
+        if (addedCount === 0) {
+            listContainer.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center;">Нет данных о просмотрах</div>';
+        }
     } catch (e) {
         console.error("Ошибка загрузки просмотров:", e);
         listContainer.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center;">Не удалось загрузить историю просмотров</div>';
@@ -585,7 +598,7 @@ window.deleteProduct = function(event, id) {
     if (buyerModal) {
         document.getElementById('buyer-username-input').value = '';
         buyerModal.classList.remove('hidden');
-        loadRecentViewersForProduct(id); // Загружаем тех, кто просматривал товар
+        loadRecentViewersForProduct(id);
     }
 };
 
@@ -691,7 +704,7 @@ window.openViewModal = function(id) {
         telegram: product.telegram || ''
     };
 
-    // Логируем просмотр товара текущим пользователем
+    // Записываем просмотр товара в базу
     logProductView(id);
 
     const editBtn = document.getElementById('edit-btn');
