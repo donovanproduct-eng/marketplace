@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Маркетплейс Telegram</title>
     <link rel="stylesheet" href="style.css">
+    
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
-    <!-- Firebase SDK (Compat версии) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
@@ -62,10 +63,10 @@
 
     <!-- Нижнее меню навигации -->
     <nav class="bottom-nav">
-        <button class="nav-btn active" onclick="switchTab('home')">
+        <button class="nav-btn active" id="btn-home" onclick="switchTab('home')">
             <span>🏠</span> Главная
         </button>
-        <button class="nav-btn" onclick="switchTab('create')">
+        <button class="nav-btn" id="btn-create" onclick="switchTab('create')">
             <span>➕</span> Подать
         </button>
     </nav>
