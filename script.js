@@ -473,7 +473,7 @@ window.openActiveSellerProfile = function() {
         pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
     }
 
-    // Сбрасываем вкладки на «Товары»
+    // Сбрасываем вкладки на «Товары» по умолчанию
     const pubTabAds = document.getElementById('pub-tab-ads');
     const pubTabReviews = document.getElementById('pub-tab-reviews');
     const pubSecAds = document.getElementById('pub-sec-ads');
@@ -523,7 +523,7 @@ function renderReviews() {
     });
 }
 
-// Рендер отзывов в чужом профиле
+// Исправленный рендер отзывов в чужом профиле по правильному ID контейнера
 function renderPublicProfileReviews(sellerTelegram) {
     const container = document.getElementById('public-reviews-list');
     if (!container) return;
