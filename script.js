@@ -196,7 +196,6 @@ async function completeVerification(phone) {
 
     document.getElementById('verify-modal').classList.add('hidden');
 
-    // Сохраняем верификацию в базы данных навсегда
     if (currentUser.username) {
         try {
             await db.collection("users").doc(currentUser.username.toLowerCase()).set({
@@ -359,7 +358,6 @@ window.toggleFavorite = function(event, id) {
     renderMyProductsTab();
 };
 
-// УДАЛЕНИЕ ИЗ FIREBASE ТОЛЬКО СВОИХ ТОВАРОВ
 window.deleteProduct = async function(event, id) {
     event.stopPropagation();
     
@@ -643,6 +641,27 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     listenFirebaseProducts();
 
+    // ЛОГИКА ОТКРЫТИЯ ПУБЛИЧНОГО ПРОФИЛЯ ПРОДАВЦА ИЗ МОДАЛКИ ТОВАРА
+    const sellerCardClickable = document.getElementById('seller-card-clickable');
+    const viewModal = document.getElementById('view-modal');
+    const publicProfileModal = document.getElementById('public-profile-modal');
+    const closePublicProfileBtn = document.getElementById('close-public-profile-btn');
+
+    if (sellerCardClickable) {
+        sellerCardClickable.onclick = () => {
+            triggerHaptic('light');
+            if (viewModal) viewModal.classList.add('hidden');
+            if (publicProfileModal) publicProfileModal.classList.remove('hidden');
+        };
+    }
+
+    if (closePublicProfileBtn && publicProfileModal) {
+        closePublicProfileBtn.onclick = () => {
+            triggerHaptic('light');
+            publicProfileModal.classList.add('hidden');
+        };
+    }
+
     const tgLoginBtn = document.getElementById('tg-login-btn');
     const guestLoginBtn = document.getElementById('guest-login-btn');
     const logoutBtn = document.getElementById('logout-btn');
@@ -733,7 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pTabBtns = document.querySelectorAll('.p-tab-btn');
     
     const modal = document.getElementById('modal');
-    const viewModal = document.getElementById('view-modal');
+    const viewModalEl = document.getElementById('view-modal');
 
     const openBtn = document.getElementById('open-modal-btn');
     const closeBtn = document.getElementById('close-modal-btn');
