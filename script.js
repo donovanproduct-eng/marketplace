@@ -10,7 +10,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyBTDdD5W7ChKm65iygEK-7pt0MNiDLhGro",
     authDomain: "tg-marketplace-3e644.firebaseapp.com",
     projectId: "tg-marketplace-3e644",
-    storageBucket: "tg-marketplace-3e644.firebasestorage.app",
+    storageBucket: "tg-marketplace-3e644.appspot.com",
     messagingSenderId: "1013734928041",
     appId: "1:1013734928041:web:0ce6564b08a43804f043b8",
     measurementId: "G-375574T1G0"
@@ -525,7 +525,7 @@ function renderReviews() {
 
 // Рендер отзывов в чужом профиле
 function renderPublicProfileReviews(sellerTelegram) {
-    const container = document.querySelector('#public-profile-modal #pub-sec-reviews .reviews-list');
+    const container = document.getElementById('public-reviews-list');
     if (!container) return;
     container.innerHTML = '';
 
