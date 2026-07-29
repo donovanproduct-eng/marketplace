@@ -16,6 +16,7 @@ const firebaseConfig = {
     measurementId: "G-375574T1G0"
 };
 
+// Инициализация Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -53,6 +54,7 @@ function hideLoader() {
     }
 }
 
+// ПОДПИСКА НА FIREBASE (ТОВАРЫ)
 function listenFirebaseProducts() {
     db.collection("products")
       .orderBy("createdAt", "desc")
@@ -82,6 +84,7 @@ function listenFirebaseProducts() {
       });
 }
 
+// ПОДПИСКА НА FIREBASE (ОТЗЫВЫ)
 function listenFirebaseReviews() {
     db.collection("reviews")
       .onSnapshot((snapshot) => {
@@ -98,6 +101,7 @@ function listenFirebaseReviews() {
       });
 }
 
+// ПОДПИСКА НА ПОКУПКИ ПОЛЬЗОВАТЕЛЯ
 function listenFirebasePurchases() {
     if (!currentUser || !currentUser.username) return;
     const cleanMyTg = currentUser.username.replace('@', '').toLowerCase();
@@ -115,8 +119,10 @@ function listenFirebasePurchases() {
       });
 }
 
+// ФИКСАЦИЯ ПРОСМОТРА ТОВАРА
 async function logProductView(productId) {
     if (!currentUser || !currentUser.username) return;
+
     const product = products.find(p => p.id === productId);
     if (!product) return;
     let pTg = (product.telegram || '').replace('@', '').toLowerCase();
@@ -135,8 +141,10 @@ async function logProductView(productId) {
     }
 }
 
+// ПРОВЕРКА ПЕНДИНГ-ОТЗЫВОВ
 function checkPendingReviewRequests() {
     if (!currentUser || !currentUser.username) return;
+
     const cleanMyTg = currentUser.username.replace('@', '').toLowerCase();
 
     db.collection("pendingReviews")
@@ -267,6 +275,7 @@ function setupAuthScreen() {
 
 async function syncUserWithFirebase() {
     if (!currentUser || !currentUser.username) return;
+
     const userDocRef = db.collection("users").doc(currentUser.username.toLowerCase());
 
     try {
@@ -313,11 +322,13 @@ function logoutUser() {
 
 async function completeVerification(phone) {
     if (!currentUser) return;
+
     currentUser.isVerified = true;
     currentUser.phone = phone;
     triggerHaptic('success');
     saveToStorage();
     renderProfile();
+
     document.getElementById('verify-modal').classList.add('hidden');
 
     if (currentUser.username) {
@@ -444,12 +455,14 @@ function closeViewModal() {
     }
 }
 
-// Нажёная функция открытия публичного профиля продавца
+// Открытие профиля продавца с диагностикой
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
     
+    console.log("Клик по продавцу. Данные:", activeSellerData);
+
     if (!activeSellerData.telegram) {
-        alert("У этого продавца не указан Telegram для перехода в профиль!");
+        alert("Ошибка: у товара не найден Telegram продавца! Проверьте базу данных.");
         return;
     }
 
@@ -1018,15 +1031,6 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     listenFirebaseProducts();
     listenFirebaseReviews();
-
-    // Гарантированная привязка клика через JS
-    const sellerCard = document.getElementById('seller-card-clickable');
-    if (sellerCard) {
-        sellerCard.addEventListener('click', (e) => {
-            e.preventDefault();
-            openActiveSellerProfile();
-        });
-    }
 
     const closeVBtn = document.getElementById('close-view-btn');
     if (closeVBtn) {
