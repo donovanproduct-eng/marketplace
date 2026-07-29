@@ -372,9 +372,9 @@ function renderPurchasesTab() {
     });
 }
 
-window.openPurchasedViewModal = function(product) {
-    triggerHaptic('light');
-    
+// Единая логика заполнения и открытия модалки товара (и для обычных, и для купленных)
+function setupViewModalCommon(product) {
+    editingProductId = null;
     currentProductImages = product.images || ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
     currentImageIndex = 0;
 
@@ -395,7 +395,17 @@ window.openPurchasedViewModal = function(product) {
         telegram: product.telegram || ''
     };
 
-    document.getElementById('edit-btn').style.display = 'none';
+    const editBtn = document.getElementById('edit-btn');
+    let pTg = (product.telegram || '').replace('@', '').toLowerCase();
+    let myTg = (currentUser?.username || '').toLowerCase();
+
+    // Кнопку изменить показываем только для активных собственных товаров
+    if (product.id && currentUser && pTg === myTg && myTg !== '') {
+        editBtn.style.display = 'block';
+        editingProductId = product.id;
+    } else {
+        editBtn.style.display = 'none';
+    }
 
     const contactBtn = document.getElementById('contact-btn');
     if (product.telegram && product.telegram.trim() !== '') {
@@ -418,7 +428,28 @@ window.openPurchasedViewModal = function(product) {
     }
 
     document.getElementById('view-modal').classList.remove('hidden');
+}
+
+window.openPurchasedViewModal = function(product) {
+    triggerHaptic('light');
+    setupViewModalCommon(product);
 };
+
+window.openViewModal = function(id) {
+    triggerHaptic('light');
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    logProductView(id);
+    setupViewModalCommon(product);
+};
+
+function closeViewModal() {
+    triggerHaptic('light');
+    document.getElementById('view-modal').classList.add('hidden');
+    if (tg?.MainButton) {
+        tg.MainButton.hide();
+    }
+}
 
 function renderReviews() {
     const list = document.getElementById('reviews-list');
@@ -816,75 +847,6 @@ function updateGallery() {
     }
 }
 
-window.openViewModal = function(id) {
-    triggerHaptic('light');
-    const product = products.find(p => p.id === id);
-    if (!product) return;
-
-    editingProductId = id;
-    currentProductImages = product.images || ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
-    currentImageIndex = 0;
-
-    updateGallery();
-
-    document.getElementById('view-title').textContent = product.title;
-    document.getElementById('view-price').textContent = product.price;
-    document.getElementById('view-category').textContent = product.category || 'Другое';
-    document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
-    document.getElementById('view-seller').textContent = product.seller || 'Продавец';
-    
-    let tgUser = product.telegram ? ('@' + product.telegram.replace('@', '')) : 'Telegram не указан';
-    document.getElementById('view-telegram').textContent = tgUser;
-    document.getElementById('view-desc').textContent = product.description || 'Описание отсутствует';
-
-    activeSellerData = {
-        name: product.seller || 'Продавец',
-        telegram: product.telegram || ''
-    };
-
-    logProductView(id);
-
-    const editBtn = document.getElementById('edit-btn');
-    let pTg = (product.telegram || '').replace('@', '').toLowerCase();
-    let myTg = (currentUser?.username || '').toLowerCase();
-
-    if (currentUser && pTg === myTg && myTg !== '') {
-        editBtn.style.display = 'block';
-    } else {
-        editBtn.style.display = 'none';
-    }
-
-    const contactBtn = document.getElementById('contact-btn');
-    if (product.telegram && product.telegram.trim() !== '') {
-        contactBtn.onclick = (e) => handleTelegramClick(e, product.telegram, product.title, product.price);
-        contactBtn.style.opacity = '1';
-        contactBtn.style.pointerEvents = 'auto';
-
-        if (tg?.MainButton) {
-            tg.MainButton.setText(`💬 Написать продавцу (${product.price})`);
-            tg.MainButton.show();
-            tg.MainButton.onClick(() => {
-                handleTelegramClick(null, product.telegram, product.title, product.price);
-            });
-        }
-    } else {
-        contactBtn.onclick = null;
-        contactBtn.style.opacity = '0.5';
-        contactBtn.style.pointerEvents = 'none';
-        if (tg?.MainButton) tg.MainButton.hide();
-    }
-
-    document.getElementById('view-modal').classList.remove('hidden');
-};
-
-function closeViewModal() {
-    triggerHaptic('light');
-    document.getElementById('view-modal').classList.add('hidden');
-    if (tg?.MainButton) {
-        tg.MainButton.hide();
-    }
-}
-
 function openEditModal() {
     triggerHaptic('light');
     const product = products.find(p => p.id === editingProductId);
@@ -1036,7 +998,6 @@ document.addEventListener('DOMContentLoaded', () => {
     listenFirebaseProducts();
     listenFirebaseReviews();
 
-    // ВОССТАНОВЛЕНИЕ КЛИКАБЕЛЬНОСТИ ПЛАШКИ ПРОДАВЦА В МОДАЛКЕ
     const sellerCardClickable = document.getElementById('seller-card-clickable');
     const viewModal = document.getElementById('view-modal');
     const publicProfileModal = document.getElementById('public-profile-modal');
