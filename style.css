@@ -435,9 +435,10 @@ body {
     background: none;
     color: var(--text-muted);
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     border-radius: 8px;
     cursor: pointer;
+    text-align: center;
 }
 
 .p-tab-btn.active {
@@ -445,7 +446,6 @@ body {
     color: var(--text-color);
 }
 
-/* Стили для списка недавних просмотров в модалке */
 .viewers-list {
     display: flex;
     flex-direction: column;
