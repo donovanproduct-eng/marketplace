@@ -445,7 +445,7 @@ window.openViewModal = function(id) {
     if (!product) return;
     logProductView(id);
     setupViewModalCommon(product);
-};
+}
 
 function closeViewModal() {
     triggerHaptic('light');
@@ -455,7 +455,7 @@ function closeViewModal() {
     }
 }
 
-// Прямой вызов открытия профиля продавца
+// Открытие профиля продавца
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
     
@@ -831,7 +831,7 @@ async function finalizeProductDeletion(buyerUsername) {
     }
 
     pendingDeleteId = null;
-};
+}
 
 window.handleTelegramClick = function(event, rawTg, productTitle, productPrice) {
     if (event) event.preventDefault();
@@ -1061,6 +1061,8 @@ document.addEventListener('DOMContentLoaded', () => {
         closePublicProfileBtn.onclick = () => {
             triggerHaptic('light');
             publicProfileModal.classList.add('hidden');
+            // Возвращаем обратно модалку просмотра товара при закрытии профиля
+            document.getElementById('view-modal').classList.remove('hidden');
         };
     }
 
