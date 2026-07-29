@@ -455,12 +455,12 @@ function closeViewModal() {
     }
 }
 
-// Надежное открытие профиля продавца с сохранением сессии
+// Открытие профиля продавца с сохранением контекста
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
     
     let targetTg = activeSellerData.telegram || '';
-    window.currentOpenedSellerTg = targetTg; // Сохраняем глобально для вкладок
+    window.currentOpenedSellerTg = targetTg;
 
     if (tg?.MainButton) {
         tg.MainButton.hide();
@@ -474,7 +474,6 @@ window.openActiveSellerProfile = function() {
         pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
     }
 
-    // Сбрасываем вкладки на «Товары»
     const pubTabAds = document.getElementById('pub-tab-ads');
     const pubTabReviews = document.getElementById('pub-tab-reviews');
     const pubSecAds = document.getElementById('pub-sec-ads');
@@ -524,7 +523,6 @@ function renderReviews() {
     });
 }
 
-// Рендер отзывов в чужом профиле
 function renderPublicProfileReviews(sellerTelegram) {
     const container = document.getElementById('public-reviews-list');
     if (!container) return;
@@ -659,7 +657,6 @@ function renderProfile() {
     renderReviews();
 }
 
-// Рендер товаров в чужом профиле
 function renderPublicProfileProducts(sellerTelegram) {
     const container = document.getElementById('public-user-products');
     if (!container) return;
@@ -1074,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
         closePublicProfileBtn.onclick = () => {
             triggerHaptic('light');
             publicProfileModal.classList.add('hidden');
-            window.currentOpenedSellerTg = null; // сбрасываем сессию при закрытии профиля
+            window.currentOpenedSellerTg = null;
             document.getElementById('view-modal').classList.remove('hidden');
         };
     }
