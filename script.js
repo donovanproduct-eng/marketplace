@@ -564,7 +564,7 @@ function compressImage(file, callback) {
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
     checkAuth();
-    listenFirebaseProducts(); // Подключаем базу!
+    listenFirebaseProducts();
 
     const tgLoginBtn = document.getElementById('tg-login-btn');
     const guestLoginBtn = document.getElementById('guest-login-btn');
@@ -762,7 +762,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeViewBtn) closeViewBtn.onclick = () => closeViewModal();
     if (editBtn) editBtn.onclick = () => openEditModal();
 
-    // СОХРАНЕНИЕ / ОБНОВЛЕНИЕ В FIREBASE
+    // СОХРАНЕНИЕ / ОБНОВЛЕНИЕ В FIREBASE С БЫСТРЫМ ЗАКРЫТИЕМ
     if (saveBtn) {
         saveBtn.onclick = async () => {
             const titleInput = document.getElementById('title-input');
@@ -781,6 +781,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let price = priceInput.value.trim() || '0';
             if (!price.includes('₽')) price = price + ' ₽';
+
+            // Мгновенно закрываем окно публикации
+            triggerHaptic('success');
+            modal.classList.add('hidden');
 
             const files = fileInput.files ? Array.from(fileInput.files).slice(0, 4) : [];
 
@@ -809,9 +813,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         await db.collection("products").add(productData);
                     }
-
-                    triggerHaptic('success');
-                    modal.classList.add('hidden');
                 } catch (err) {
                     console.error("Ошибка сохранения в Firebase:", err);
                     alert("Ошибка публикации!");
