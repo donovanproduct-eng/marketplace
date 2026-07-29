@@ -6,34 +6,42 @@ if (tg) {
 
 // Конфигурация Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyBTDdD5W7ChKm65iygEK-7pt0MNiDLhGro",
-  authDomain: "tg-marketplace-3e644.firebaseapp.com",
-  projectId: "tg-marketplace-3e644",
-  storageBucket: "tg-marketplace-3e644.firebasestorage.app",
-  messagingSenderId: "1013734928041",
-  appId: "1:1013734928041:web:0ce6564b08a43804f043b8",
-  measurementId: "G-375574T1G0"
+    apiKey: "AIzaSyBTDdD5W7ChKm65iygEK-7pt0MNiDLhGro",
+    authDomain: "tg-marketplace-3e644.firebaseapp.com",
+    projectId: "tg-marketplace-3e644",
+    storageBucket: "tg-marketplace-3e644.firebasestorage.app",
+    messagingSenderId: "1013734928041",
+    appId: "1:1013734928041:web:0ce6564b08a43804f043b8",
+    measurementId: "G-375574T1G0"
 };
 
-// Инициализация Firebase & Firestore
+// Инициализируем Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Переключение вкладок
+// ЧЕТКОЕ ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
 function switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    const homeTab = document.getElementById('tab-home');
+    const createTab = document.getElementById('tab-create');
+    const btnHome = document.getElementById('btn-home');
+    const btnCreate = document.getElementById('btn-create');
 
     if (tabName === 'home') {
-        document.getElementById('tab-home').classList.add('active');
-        event.currentTarget.classList.add('active');
+        homeTab.classList.add('active');
+        createTab.classList.remove('active');
+        
+        if(btnHome) btnHome.classList.add('active');
+        if(btnCreate) btnCreate.classList.remove('active');
     } else if (tabName === 'create') {
-        document.getElementById('tab-create').classList.add('active');
-        event.currentTarget.classList.add('active');
+        createTab.classList.add('active');
+        homeTab.classList.remove('active');
+
+        if(btnCreate) btnCreate.classList.add('active');
+        if(btnHome) btnHome.classList.remove('active');
     }
 }
 
-// Загрузка товаров из Firestore в реальном времени
+// Загрузка товаров из базы
 function listenProducts() {
     const listContainer = document.getElementById('products-list');
 
@@ -69,11 +77,11 @@ function listenProducts() {
           });
       }, (error) => {
           console.error("Ошибка Firebase:", error);
-          listContainer.innerHTML = "<p class='error-text'>Ошибка загрузки. Проверьте режим Firestore (Test Mode).</p>";
+          listContainer.innerHTML = "<p class='error-text'>Ошибка загрузки базы данных.</p>";
       });
 }
 
-// Отправка товара в Firestore
+// Отправка нового товара
 document.getElementById('add-product-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -97,17 +105,18 @@ document.getElementById('add-product-form').addEventListener('submit', async (e)
         await db.collection("products").add(newProduct);
         alert("Объявление создано!");
         document.getElementById('add-product-form').reset();
-        switchTab('home');
+        switchTab('home'); // Переключаем на главную после создания
     } catch (err) {
         console.error("Ошибка при сохранении:", err);
-        alert("Не удалось сохранить. Проверьте Firestore Test Mode!");
+        alert("Не удалось сохранить.");
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = 'Опубликовать';
     }
 });
 
-// Старт
+// Запуск при старте
 document.addEventListener('DOMContentLoaded', () => {
+    switchTab('home'); // Принудительно открываем Главную
     listenProducts();
 });
