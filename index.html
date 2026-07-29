@@ -148,6 +148,46 @@
         <button id="open-modal-btn" class="add-btn">+</button>
     </div>
 
+    <!-- Модалка: Указание покупателя при удалении товара -->
+    <div id="buyer-modal" class="modal hidden">
+        <div class="modal-content verify-modal-content">
+            <div class="verify-icon">🤝</div>
+            <h2>Товар продан?</h2>
+            <p class="verify-desc">Укажите @username покупателя, чтобы он смог оставить вам отзыв о сделке.</p>
+            
+            <input type="text" id="buyer-username-input" class="auth-input" placeholder="@username покупателя" style="margin-bottom: 12px;">
+            
+            <div class="modal-buttons" style="display: flex; gap: 10px;">
+                <button id="skip-buyer-btn" class="btn-secondary" style="flex:1;">Пропустить</button>
+                <button id="save-buyer-btn" class="btn-primary" style="flex:1;">Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка: Оставить отзыв покупателем -->
+    <div id="leave-review-modal" class="modal hidden">
+        <div class="modal-content verify-modal-content">
+            <div class="verify-icon">⭐</div>
+            <h2>Оставьте отзыв</h2>
+            <p id="leave-review-desc" class="verify-desc">Вы купили товар. Пожалуйста, оцените продавца.</p>
+
+            <select id="review-stars-select" class="select-input" style="margin-bottom: 10px;">
+                <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                <option value="3">⭐⭐⭐ (3/5)</option>
+                <option value="2">⭐⭐ (2/5)</option>
+                <option value="1">⭐ (1/5)</option>
+            </select>
+
+            <textarea id="review-text-input" placeholder="Ваш отзыв о сделке..." rows="3" class="auth-input" style="margin-bottom: 12px; resize: none;"></textarea>
+
+            <div class="modal-buttons" style="display: flex; gap: 10px;">
+                <button id="cancel-review-btn" class="btn-secondary" style="flex:1;">Позже</button>
+                <button id="submit-review-btn" class="btn-primary" style="flex:1;">Отправить</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Модалка: Добавление/Редактирование товара -->
     <div id="modal" class="modal hidden">
         <div class="modal-content">
@@ -262,13 +302,6 @@
                             <span class="review-stars">⭐⭐⭐⭐⭐</span>
                         </div>
                         <p class="review-text">Быстро отправил, упаковал надежно. Товар супер!</p>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-header">
-                            <span class="review-author">Мария</span>
-                            <span class="review-stars">⭐⭐⭐⭐⭐</span>
-                        </div>
-                        <p class="review-text">Всё согласно описанию, вежливый продавец.</p>
                     </div>
                 </div>
             </div>
