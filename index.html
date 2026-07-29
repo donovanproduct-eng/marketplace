@@ -17,12 +17,12 @@
       background-color: #000000;
       color: #ffffff;
       padding: 16px;
-      padding-bottom: 90px;
+      padding-bottom: 100px; /* Отступ под нижнее меню */
       max-width: 500px;
       margin: 0 auto;
     }
 
-    /* ЭКРАН 1: ПРОФИЛЬ */
+    /* ШАПКА ПРОФИЛЯ */
     .profile-card {
       background-color: #1c1c1e;
       border-radius: 20px;
@@ -74,7 +74,7 @@
     .stars { color: #ffcc00; margin: 0 4px; }
     .reviews-count { color: #8e8e93; }
 
-    /* Карточки "Объявления" и "В избранном" */
+    /* КАРТОЧКИ: ОБЪЯВЛЕНИЯ И ИЗБРАННОЕ */
     .stats-container {
       display: flex;
       gap: 10px;
@@ -114,7 +114,7 @@
       color: #8e8e93;
     }
 
-    /* Вкладки Мои товары / Отзывы */
+    /* ВКЛАДКИ: МОИ ТОВАРЫ / ОТЗЫВЫ */
     .tab-switcher {
       display: flex;
       background-color: #1c1c1e;
@@ -139,7 +139,7 @@
       background-color: #2c2c2e;
     }
 
-    /* Сетка товаров */
+    /* СЕТКА ТОВАРОВ */
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
@@ -174,7 +174,76 @@
     .product-location { font-size: 12px; color: #8e8e93; margin-bottom: 6px; }
     .product-price { font-size: 16px; font-weight: 700; color: #0a84ff; }
 
-    /* МОДАЛЬНОЕ ОКНО ТОВАРА (КАК НА СКРИНШОТЕ) */
+    /* КНОПКА ВЫХОДА */
+    .logout-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: none;
+      border: none;
+      color: #ff453a;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 28px;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+
+    /* СИНЯЯ КНОПКА + */
+    .fab-btn {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: #0a84ff;
+      color: #ffffff;
+      font-size: 32px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4);
+      cursor: pointer;
+      z-index: 90;
+    }
+
+    /* НИЖНЕЕ МЕНЮ НАВИГАЦИИ (ТАББАР) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 65px;
+      background-color: #1c1c1e;
+      border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: #8e8e93;
+      text-decoration: none;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .nav-item.active {
+      color: #0a84ff;
+    }
+
+    .nav-icon {
+      font-size: 20px;
+    }
+
+    /* МОДАЛЬНОЕ ОКНО ТОВАРА */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -183,7 +252,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      z-index: 200;
       padding: 16px;
     }
 
@@ -245,7 +314,7 @@
       margin-bottom: 14px;
     }
 
-    /* Плашка продавца (КЛИКАБЕЛЬНАЯ!) */
+    /* ПЛАШКА ПРОДАВЦА В МОДАЛКЕ */
     .seller-card {
       background-color: #2c2c2e;
       border-radius: 16px;
@@ -285,11 +354,18 @@
       font-weight: 600;
       cursor: pointer;
     }
+
+    .empty-msg {
+      text-align: center;
+      color: #8e8e93;
+      padding: 40px 0;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Профиль пользователя -->
+  <!-- ПРОФИЛЬ -->
   <div class="profile-card">
     <img src="https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=200" class="avatar" id="user-avatar" alt="Avatar">
     <div class="username" id="user-name">3YUG</div>
@@ -314,16 +390,17 @@
     </div>
   </div>
 
-  <!-- Вкладки -->
+  <!-- ВКЛАДКИ -->
   <div class="tab-switcher">
     <button class="tab-btn active" id="tab-btn-products">Мои товары</button>
     <button class="tab-btn" id="tab-btn-reviews">Отзывы</button>
   </div>
 
-  <!-- КОНТЕНТ ВКТАДОК -->
+  <!-- СПИСКИ ТОВАРОВ -->
+  <!-- 1. Мои объявления -->
   <div class="tab-content active" id="content-ads">
     <div class="products-grid">
-      <div class="product-card" onclick="openModal('ваня', '3500 ₽', 'Минск', '𝖁𝖑𝖆𝖉𝖎𝖐', '@lilvfromdablock')">
+      <div class="product-card" onclick="openModal('ваня', '3500 ₽', 'Минск', '𝖁𝖑𝖆𝖉𝖎𝖐', '@lilvfromdablock', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400')">
         <div class="product-image-container">
           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400" class="product-image" alt="Товар">
         </div>
@@ -336,9 +413,10 @@
     </div>
   </div>
 
+  <!-- 2. В избранном -->
   <div class="tab-content" id="content-favs">
     <div class="products-grid">
-      <div class="product-card">
+      <div class="product-card" onclick="openModal('Куртка Stone Island', '25000 ₽', 'Минск', 'Алексей', '@alex_store', 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400')">
         <div class="product-image-container">
           <img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400" class="product-image" alt="Куртка">
         </div>
@@ -351,11 +429,36 @@
     </div>
   </div>
 
+  <!-- 3. Отзывы -->
+  <div class="tab-content" id="content-reviews">
+    <div class="empty-msg">У вас 2 отзыва от покупателей</div>
+  </div>
+
+  <!-- КНОПКА ВЫЙТИ И СИНЯЯ КНОПКА + -->
+  <button class="logout-btn">Выйти из аккаунта</button>
+  <button class="fab-btn">+</button>
+
+  <!-- НИЖНЕЕ МЕНЮ НАВИГАЦИИ -->
+  <div class="bottom-nav">
+    <div class="nav-item">
+      <span class="nav-icon">🛍️</span>
+      <span>Объявления</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">📦</span>
+      <span>Мои товары</span>
+    </div>
+    <div class="nav-item active">
+      <span class="nav-icon">👤</span>
+      <span>Профиль</span>
+    </div>
+  </div>
+
   <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
   <div class="modal-overlay" id="product-modal" style="display: none;">
     <div class="modal-card">
       <button class="modal-close-btn" onclick="closeModal()">✕</button>
-      <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400" class="modal-img" id="modal-img" alt="Товар">
+      <img src="" class="modal-img" id="modal-img" alt="Товар">
       
       <div class="modal-tags">
         <span class="tag">Другое</span>
@@ -379,8 +482,9 @@
     </div>
   </div>
 
+  <!-- СКРИПТЫ -->
   <script>
-    // --- 1. ЛОГИКА ПЕРЕКЛЮЧЕНИЯ В КАРТОЧКЕ ПРОФИЛЯ ---
+    // --- ПЕРЕКЛЮЧЕНИЕ КАРТОЧЕК ("Объявления" и "В избранном") ---
     const cardAds = document.getElementById('card-ads');
     const cardFavs = document.getElementById('card-favs');
     const btnProducts = document.getElementById('tab-btn-products');
@@ -388,6 +492,7 @@
 
     const contentAds = document.getElementById('content-ads');
     const contentFavs = document.getElementById('content-favs');
+    const contentReviews = document.getElementById('content-reviews');
 
     function resetTabs() {
       cardAds.classList.remove('active');
@@ -397,6 +502,7 @@
 
       contentAds.classList.remove('active');
       contentFavs.classList.remove('active');
+      contentReviews.classList.remove('active');
     }
 
     cardAds.addEventListener('click', () => {
@@ -419,18 +525,25 @@
       contentAds.classList.add('active');
     });
 
-    // --- 2. ЛОГИКА МОДАЛКИ И ПЕРЕХОДА НА ПРОФИЛЬ ПРОДАВЦА ---
+    btnReviews.addEventListener('click', () => {
+      resetTabs();
+      btnReviews.classList.add('active');
+      contentReviews.classList.add('active');
+    });
+
+    // --- МОДАЛКА ТОВАРА И ПЕРЕХОД НА ПРОДАВЦА ---
     const modal = document.getElementById('product-modal');
     const sellerBtn = document.getElementById('seller-profile-btn');
     let currentSellerHandle = '';
     let currentSellerName = '';
 
-    function openModal(title, price, location, sellerName, sellerHandle) {
+    function openModal(title, price, location, sellerName, sellerHandle, imgSrc) {
       document.getElementById('modal-title').innerText = title;
       document.getElementById('modal-price').innerText = price;
       document.getElementById('modal-location').innerText = '📍 ' + location;
       document.getElementById('seller-name').innerText = sellerName;
       document.getElementById('seller-handle').innerText = sellerHandle;
+      document.getElementById('modal-img').src = imgSrc;
       
       currentSellerName = sellerName;
       currentSellerHandle = sellerHandle;
@@ -442,22 +555,19 @@
       modal.style.display = 'none';
     }
 
-    // При клике на продавца в модалке
+    // При клике на плашку продавца
     sellerBtn.addEventListener('click', () => {
-      // 1. Закрываем модальное окно товара
       closeModal();
 
-      // 2. Обновляем данные профиля на экранах под этого продавца
+      // Меняем профиль
       document.getElementById('user-name').innerText = currentSellerName;
       document.getElementById('user-handle').innerText = currentSellerHandle;
 
-      // 3. Автоматически переходим на вкладку "Объявления" продавца
       resetTabs();
       cardAds.classList.add('active');
       btnProducts.classList.add('active');
       contentAds.classList.add('active');
 
-      // Прокручиваем наверх к профилю
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   </script>
