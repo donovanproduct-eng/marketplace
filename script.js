@@ -46,6 +46,7 @@ let currentCityFilter = 'all';
 let editingProductId = null;
 let currentImageIndex = 0;
 let currentProductImages = [];
+let selectedSellerTg = '';
 
 let isDarkTheme = localStorage.getItem('my_marketplace_theme') === 'dark';
 
@@ -313,7 +314,6 @@ window.toggleFavorite = function(event, id) {
     renderMyProductsTab();
 };
 
-// УДАЛЕНИЕ ИЗ FIREBASE ТОЛЬКО СВОИХ ТОВАРОВ
 window.deleteProduct = async function(event, id) {
     event.stopPropagation();
     
@@ -323,7 +323,6 @@ window.deleteProduct = async function(event, id) {
     let pTg = (product.telegram || '').replace('@', '').toLowerCase();
     let myTg = (currentUser?.username || '').toLowerCase();
 
-    // Проверка владельца
     if (!currentUser || pTg !== myTg || !myTg) {
         triggerHaptic('error');
         alert("Вы можете удалять только свои объявления!");
@@ -388,6 +387,52 @@ function updateGallery() {
     }
 }
 
+// ОТКРЫТИЕ ЧУЖОГО ПРОФИЛЯ
+function openPublicProfile(sellerName, sellerTg) {
+    triggerHaptic('light');
+    closeViewModal();
+
+    selectedSellerTg = sellerTg.replace('@', '').toLowerCase();
+
+    document.getElementById('public-user-name').textContent = sellerName || 'Продавец';
+    document.getElementById('public-user-tg').textContent = `@${selectedSellerTg}`;
+
+    // Загружаем товары продавца
+    const sellerProducts = products.filter(p => {
+        let pTg = (p.telegram || '').replace('@', '').toLowerCase();
+        return pTg === selectedSellerTg && pTg !== '';
+    });
+
+    const container = document.getElementById('public-user-products');
+    container.innerHTML = '';
+
+    if (sellerProducts.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">У этого продавца больше нет объявлений</div>';
+    } else {
+        sellerProducts.forEach(item => {
+            const isFav = favorites.includes(item.id);
+            const mainImage = item.images[0];
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.onclick = () => {
+                document.getElementById('public-profile-modal').classList.add('hidden');
+                openViewModal(item.id);
+            };
+
+            card.innerHTML = `
+                <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
+                <img class="product-image" src="${mainImage}" alt="${item.title}">
+                <div class="product-title">${item.title}</div>
+                <div class="product-city">📍 ${item.city || 'Минск'}</div>
+                <div class="product-price">${item.price}</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    document.getElementById('public-profile-modal').classList.remove('hidden');
+}
+
 window.openViewModal = function(id) {
     triggerHaptic('light');
     const product = products.find(p => p.id === id);
@@ -403,17 +448,26 @@ window.openViewModal = function(id) {
     document.getElementById('view-price').textContent = product.price;
     document.getElementById('view-category').textContent = product.category || 'Другое';
     document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
-    document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
-    let tgUser = product.telegram ? ('@' + product.telegram.replace('@', '')) : 'Telegram не указан';
-    document.getElementById('view-telegram').textContent = tgUser;
+    let sellerName = product.seller || 'Продавец';
+    let rawTg = product.telegram || '';
+    
+    document.getElementById('view-seller').textContent = sellerName;
+    document.getElementById('view-telegram').textContent = rawTg ? ('@' + rawTg.replace('@', '')) : 'Telegram не указан';
     document.getElementById('view-desc').textContent = product.description || 'Описание отсутствует';
 
+    // Нажатие на карточку продавца открывает его профиль
+    const sellerCard = document.getElementById('seller-card-clickable');
+    if (rawTg) {
+        sellerCard.onclick = () => openPublicProfile(sellerName, rawTg);
+    } else {
+        sellerCard.onclick = null;
+    }
+
     const editBtn = document.getElementById('edit-btn');
-    let pTg = (product.telegram || '').replace('@', '').toLowerCase();
+    let pTg = rawTg.replace('@', '').toLowerCase();
     let myTg = (currentUser?.username || '').toLowerCase();
 
-    // Показываем кнопку редактирования только владельцу
     if (currentUser && pTg === myTg && myTg !== '') {
         editBtn.style.display = 'block';
     } else {
@@ -421,8 +475,8 @@ window.openViewModal = function(id) {
     }
 
     const contactBtn = document.getElementById('contact-btn');
-    if (product.telegram && product.telegram.trim() !== '') {
-        contactBtn.onclick = (e) => handleTelegramClick(e, product.telegram, product.title, product.price);
+    if (rawTg && rawTg.trim() !== '') {
+        contactBtn.onclick = (e) => handleTelegramClick(e, rawTg, product.title, product.price);
         contactBtn.style.opacity = '1';
         contactBtn.style.pointerEvents = 'auto';
 
@@ -430,7 +484,7 @@ window.openViewModal = function(id) {
             tg.MainButton.setText(`💬 Написать продавцу (${product.price})`);
             tg.MainButton.show();
             tg.MainButton.onClick(() => {
-                handleTelegramClick(null, product.telegram, product.title, product.price);
+                handleTelegramClick(null, rawTg, product.title, product.price);
             });
         }
     } else {
@@ -609,6 +663,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmTgPhoneBtn = document.getElementById('confirm-tg-phone-btn');
     const saveManualPhoneBtn = document.getElementById('save-manual-phone-btn');
 
+    const closePublicProfileBtn = document.getElementById('close-public-profile-btn');
+    const pubTabAds = document.getElementById('pub-tab-ads');
+    const pubTabReviews = document.getElementById('pub-tab-reviews');
+
+    if (closePublicProfileBtn) {
+        closePublicProfileBtn.onclick = () => {
+            triggerHaptic('light');
+            document.getElementById('public-profile-modal').classList.add('hidden');
+        };
+    }
+
+    if (pubTabAds && pubTabReviews) {
+        pubTabAds.onclick = () => {
+            triggerHaptic('selection');
+            pubTabAds.classList.add('active');
+            pubTabReviews.classList.remove('active');
+            document.getElementById('pub-sec-ads').classList.remove('hidden');
+            document.getElementById('pub-sec-reviews').classList.add('hidden');
+        };
+
+        pubTabReviews.onclick = () => {
+            triggerHaptic('selection');
+            pubTabReviews.classList.add('active');
+            pubTabAds.classList.remove('active');
+            document.getElementById('pub-sec-reviews').classList.remove('hidden');
+            document.getElementById('pub-sec-ads').classList.add('hidden');
+        };
+    }
+
     if (openVerifyBtn) {
         openVerifyBtn.onclick = () => {
             triggerHaptic('light');
@@ -689,8 +772,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const pTabBtns = document.querySelectorAll('.p-tab-btn');
     
     const modal = document.getElementById('modal');
-    const viewModal = document.getElementById('view-modal');
-
     const openBtn = document.getElementById('open-modal-btn');
     const closeBtn = document.getElementById('close-modal-btn');
     const closeViewBtn = document.getElementById('close-view-btn');
