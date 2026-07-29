@@ -372,7 +372,7 @@ function renderPurchasesTab() {
     });
 }
 
-// Универсальная функция настройки модалки просмотра (с защитой от кривых юзернеймов)
+// Универсальная функция настройки модалки просмотра с гарантированным кликом по продавцу
 function setupViewModalCommon(product) {
     editingProductId = null;
     currentProductImages = product.images || ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
@@ -386,8 +386,8 @@ function setupViewModalCommon(product) {
     document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
-    // Очищаем юзернейм от лишних символов (например, если там записана ссылка или пробелы)
-    let rawTg = product.telegram ? product.telegram.trim() : '';
+    // Очищаем юзернейм
+    let rawTg = product.telegram ? String(product.telegram).trim() : '';
     if (rawTg.includes('t.me/')) {
         rawTg = rawTg.split('t.me/')[1].split('/')[0];
     }
@@ -402,17 +402,20 @@ function setupViewModalCommon(product) {
         telegram: cleanTg
     };
 
-    // Вешаем обработчик клика на плашку продавца с гарантированной защитой
+    // Настраиваем клик на карточку продавца внутри модалки
     const sellerCardClickable = document.getElementById('seller-card-clickable');
     const viewModal = document.getElementById('view-modal');
     const publicProfileModal = document.getElementById('public-profile-modal');
 
     if (sellerCardClickable) {
-        // Убираем старые клоны слушателей, заменяя элемент или присваивая напрямую
-        sellerCardClickable.onclick = null;
         sellerCardClickable.onclick = () => {
             triggerHaptic('light');
             
+            if (!activeSellerData.telegram) {
+                alert("У этого продавца не указан Telegram для перехода в профиль!");
+                return;
+            }
+
             if (tg?.MainButton) {
                 tg.MainButton.hide();
             }
@@ -422,7 +425,7 @@ function setupViewModalCommon(product) {
 
             if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
             if (pubTgEl) {
-                pubTgEl.textContent = activeSellerData.telegram ? `@${activeSellerData.telegram}` : '@username';
+                pubTgEl.textContent = `@${activeSellerData.telegram}`;
             }
 
             renderPublicProfileProducts(activeSellerData.telegram);
