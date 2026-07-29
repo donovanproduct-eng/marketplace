@@ -372,7 +372,7 @@ function renderPurchasesTab() {
     });
 }
 
-// Универсальная функция настройки модалки просмотра
+// Общая логика открытия модалки товара
 function setupViewModalCommon(product) {
     editingProductId = null;
     currentProductImages = product.images || ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
@@ -401,45 +401,10 @@ function setupViewModalCommon(product) {
         telegram: cleanTg
     };
 
-    // Настраиваем клик на карточку продавца (РАБОТАЕТ ВСЕГДА, ДАЖЕ ДЛЯ СВОИХ ТОВАРОВ)
-    const sellerCardClickable = document.getElementById('seller-card-clickable');
-    const viewModal = document.getElementById('view-modal');
-    const publicProfileModal = document.getElementById('public-profile-modal');
-
-    if (sellerCardClickable) {
-        sellerCardClickable.onclick = () => {
-            triggerHaptic('light');
-            
-            if (!activeSellerData.telegram) {
-                alert("У этого продавца не указан Telegram для перехода в профиль!");
-                return;
-            }
-
-            if (tg?.MainButton) {
-                tg.MainButton.hide();
-            }
-
-            const pubNameEl = document.getElementById('public-user-name');
-            const pubTgEl = document.getElementById('public-user-tg');
-
-            if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
-            if (pubTgEl) {
-                pubTgEl.textContent = `@${activeSellerData.telegram}`;
-            }
-
-            renderPublicProfileProducts(activeSellerData.telegram);
-            renderPublicProfileReviews(activeSellerData.telegram);
-
-            if (viewModal) viewModal.classList.add('hidden');
-            if (publicProfileModal) publicProfileModal.classList.remove('hidden');
-        };
-    }
-
     const editBtn = document.getElementById('edit-btn');
     let pTg = cleanTg.toLowerCase();
     let myTg = (currentUser?.username || '').replace('@', '').toLowerCase();
 
-    // Если это твой товар, показываем кнопку «Изменить»
     if (product.id && currentUser && pTg === myTg && myTg !== '') {
         editBtn.style.display = 'block';
         editingProductId = product.id;
@@ -490,6 +455,34 @@ function closeViewModal() {
         tg.MainButton.hide();
     }
 }
+
+// Глобальная функция перехода в профиль продавца (вызывается при клике на блок продавца)
+window.openActiveSellerProfile = function() {
+    triggerHaptic('light');
+    
+    if (!activeSellerData.telegram) {
+        alert("У этого продавца не указан Telegram для перехода в профиль!");
+        return;
+    }
+
+    if (tg?.MainButton) {
+        tg.MainButton.hide();
+    }
+
+    const pubNameEl = document.getElementById('public-user-name');
+    const pubTgEl = document.getElementById('public-user-tg');
+
+    if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
+    if (pubTgEl) {
+        pubTgEl.textContent = `@${activeSellerData.telegram}`;
+    }
+
+    renderPublicProfileProducts(activeSellerData.telegram);
+    renderPublicProfileReviews(activeSellerData.telegram);
+
+    document.getElementById('view-modal').classList.add('hidden');
+    document.getElementById('public-profile-modal').classList.remove('hidden');
+};
 
 function renderReviews() {
     const list = document.getElementById('reviews-list');
@@ -1037,6 +1030,14 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     listenFirebaseProducts();
     listenFirebaseReviews();
+
+    // Прямая привязка клика на блок продавца через DOM (чтобы гарантированно срабатывало)
+    const sellerCardClickable = document.getElementById('seller-card-clickable');
+    if (sellerCardClickable) {
+        sellerCardClickable.addEventListener('click', () => {
+            window.openActiveSellerProfile();
+        });
+    }
 
     const closeVBtn = document.getElementById('close-view-btn');
     if (closeVBtn) {
