@@ -372,7 +372,7 @@ function renderPurchasesTab() {
     });
 }
 
-// Единая универсальная функция открытия модалки товара + жесткая привязка клика по продавцу
+// Универсальная функция настройки модалки просмотра (с защитой от кривых юзернеймов)
 function setupViewModalCommon(product) {
     editingProductId = null;
     currentProductImages = product.images || ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
@@ -386,21 +386,30 @@ function setupViewModalCommon(product) {
     document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
-    let tgUser = product.telegram ? ('@' + product.telegram.replace('@', '')) : 'Telegram не указан';
+    // Очищаем юзернейм от лишних символов (например, если там записана ссылка или пробелы)
+    let rawTg = product.telegram ? product.telegram.trim() : '';
+    if (rawTg.includes('t.me/')) {
+        rawTg = rawTg.split('t.me/')[1].split('/')[0];
+    }
+    let cleanTg = rawTg.replace('@', '').trim();
+
+    let tgUser = cleanTg ? ('@' + cleanTg) : 'Telegram не указан';
     document.getElementById('view-telegram').textContent = tgUser;
     document.getElementById('view-desc').textContent = product.description || 'Описание отсутствует';
 
     activeSellerData = {
         name: product.seller || 'Продавец',
-        telegram: product.telegram || ''
+        telegram: cleanTg
     };
 
-    // ГАРАНТИРОВАННО НАСТРАИВАЕМ КЛИК НА ПЛАШКУ ПРОДАВЦА ВНУТРИ МОДАЛКИ
+    // Вешаем обработчик клика на плашку продавца с гарантированной защитой
     const sellerCardClickable = document.getElementById('seller-card-clickable');
     const viewModal = document.getElementById('view-modal');
     const publicProfileModal = document.getElementById('public-profile-modal');
 
     if (sellerCardClickable) {
+        // Убираем старые клоны слушателей, заменяя элемент или присваивая напрямую
+        sellerCardClickable.onclick = null;
         sellerCardClickable.onclick = () => {
             triggerHaptic('light');
             
@@ -413,8 +422,7 @@ function setupViewModalCommon(product) {
 
             if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
             if (pubTgEl) {
-                let cleanTg = activeSellerData.telegram.trim().replace('@', '');
-                pubTgEl.textContent = cleanTg ? `@${cleanTg}` : '@username';
+                pubTgEl.textContent = activeSellerData.telegram ? `@${activeSellerData.telegram}` : '@username';
             }
 
             renderPublicProfileProducts(activeSellerData.telegram);
@@ -426,8 +434,8 @@ function setupViewModalCommon(product) {
     }
 
     const editBtn = document.getElementById('edit-btn');
-    let pTg = (product.telegram || '').replace('@', '').toLowerCase();
-    let myTg = (currentUser?.username || '').toLowerCase();
+    let pTg = cleanTg.toLowerCase();
+    let myTg = (currentUser?.username || '').replace('@', '').toLowerCase();
 
     if (product.id && currentUser && pTg === myTg && myTg !== '') {
         editBtn.style.display = 'block';
@@ -437,8 +445,8 @@ function setupViewModalCommon(product) {
     }
 
     const contactBtn = document.getElementById('contact-btn');
-    if (product.telegram && product.telegram.trim() !== '') {
-        contactBtn.onclick = (e) => handleTelegramClick(e, product.telegram, product.title, product.price);
+    if (cleanTg !== '') {
+        contactBtn.onclick = (e) => handleTelegramClick(e, cleanTg, product.title, product.price);
         contactBtn.style.opacity = '1';
         contactBtn.style.pointerEvents = 'auto';
 
@@ -446,7 +454,7 @@ function setupViewModalCommon(product) {
             tg.MainButton.setText(`💬 Написать продавцу (${product.price})`);
             tg.MainButton.show();
             tg.MainButton.onClick(() => {
-                handleTelegramClick(null, product.telegram, product.title, product.price);
+                handleTelegramClick(null, cleanTg, product.title, product.price);
             });
         }
     } else {
