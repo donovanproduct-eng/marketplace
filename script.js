@@ -49,8 +49,15 @@ let currentProductImages = [];
 
 let isDarkTheme = localStorage.getItem('my_marketplace_theme') === 'dark';
 
-// Переменная для хранения данных выбранного в данный момент продавца
 let activeSellerData = { name: '', telegram: '' };
+
+// Функция скрытия индикатора загрузки
+function hideLoader() {
+    const loader = document.getElementById('loading-spinner');
+    if (loader) {
+        loader.classList.add('hidden');
+    }
+}
 
 // ПОДПИСКА НА FIREBASE В РЕАЛЬНОМ ВРЕМЕНИ
 function listenFirebaseProducts() {
@@ -70,12 +77,15 @@ function listenFirebaseProducts() {
           renderProfile();
           renderMyProductsTab();
           
-          // Если открыта модалка чужого профиля, обновляем её товары на лету
           if (activeSellerData.telegram) {
               renderPublicProfileProducts(activeSellerData.telegram);
           }
+
+          // Убираем лоадер после первой успешной загрузки данных
+          hideLoader();
       }, (err) => {
           console.error("Ошибка Firebase:", err);
+          hideLoader();
       });
 }
 
@@ -351,7 +361,6 @@ function renderProfile() {
     renderReviews();
 }
 
-// Отрисовка товаров чужого профиля в модалке
 function renderPublicProfileProducts(sellerTelegram) {
     const container = document.getElementById('public-user-products');
     if (!container) return;
@@ -374,7 +383,6 @@ function renderPublicProfileProducts(sellerTelegram) {
         const card = document.createElement('div');
         card.className = 'product-card';
         card.onclick = () => {
-            // При клике на товар в профиле продавца — закрываем профиль и открываем карточку товара
             document.getElementById('public-profile-modal').classList.add('hidden');
             openViewModal(item.id);
         };
@@ -501,7 +509,6 @@ window.openViewModal = function(id) {
     document.getElementById('view-telegram').textContent = tgUser;
     document.getElementById('view-desc').textContent = product.description || 'Описание отсутствует';
 
-    // Сохраняем актуальные данные текущего продавца для передачи в профиль
     activeSellerData = {
         name: product.seller || 'Продавец',
         telegram: product.telegram || ''
@@ -696,7 +703,6 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     listenFirebaseProducts();
 
-    // ЛОГИКА ОТКРЫТИЯ ПУБЛИЧНОГО ПРОФИЛЯ ПРОДАВЦА ИЗ МОДАЛКИ ТОВАРА
     const sellerCardClickable = document.getElementById('seller-card-clickable');
     const viewModal = document.getElementById('view-modal');
     const publicProfileModal = document.getElementById('public-profile-modal');
@@ -706,7 +712,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sellerCardClickable.onclick = () => {
             triggerHaptic('light');
             
-            // Заполняем данные продавца в модалке публичного профиля реальными данными из активного товара
             const pubNameEl = document.getElementById('public-user-name');
             const pubTgEl = document.getElementById('public-user-tg');
 
@@ -716,7 +721,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 pubTgEl.textContent = cleanTg ? `@${cleanTg}` : '@username';
             }
 
-            // Рендерим товары этого продавца
             renderPublicProfileProducts(activeSellerData.telegram);
 
             if (viewModal) viewModal.classList.add('hidden');
@@ -731,7 +735,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Переключение табов внутри модалки чужого профиля (Товары / Отзывы)
     const pubTabAds = document.getElementById('pub-tab-ads');
     const pubTabReviews = document.getElementById('pub-tab-reviews');
     const pubSecAds = document.getElementById('pub-sec-ads');
