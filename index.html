@@ -303,7 +303,6 @@
                 <div id="public-user-products" class="products-grid"></div>
             </div>
 
-            <!-- ИСПРАВЛЕННЫЙ БЛОК ОТЗЫВОВ С УНИКАЛЬНЫМ ID -->
             <div id="pub-sec-reviews" class="profile-section hidden">
                 <div id="public-reviews-list" class="reviews-list"></div>
             </div>
@@ -359,6 +358,7 @@
             }
         }
 
+        // Стабильное переключение вкладок публичного профиля с подгрузкой данных
         function switchPublicTab(tabName) {
             const pubTabAds = document.getElementById('pub-tab-ads');
             const pubTabReviews = document.getElementById('pub-tab-reviews');
@@ -370,11 +370,17 @@
                 pubTabReviews.classList.remove('active');
                 pubSecAds.classList.remove('hidden');
                 pubSecReviews.classList.add('hidden');
+                if (window.currentOpenedSellerTg) {
+                    renderPublicProfileProducts(window.currentOpenedSellerTg);
+                }
             } else {
                 pubTabReviews.classList.add('active');
                 pubTabAds.classList.remove('active');
                 pubSecReviews.classList.remove('hidden');
                 pubSecAds.classList.add('hidden');
+                if (window.currentOpenedSellerTg) {
+                    renderPublicProfileReviews(window.currentOpenedSellerTg);
+                }
             }
         }
     </script>
