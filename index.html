@@ -1,291 +1,465 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Telegram Marketplace</title>
-    
-    <!-- Telegram WebApp SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- Firebase SDK (v8) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>MyMarketplace</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      padding: 16px;
+      padding-bottom: 90px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* ЭКРАН 1: ПРОФИЛЬ */
+    .profile-card {
+      background-color: #1c1c1e;
+      border-radius: 20px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .avatar {
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 12px;
+    }
+
+    .username {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .user-handle {
+      color: #2f80ed;
+      font-size: 15px;
+      margin-bottom: 10px;
+      text-decoration: none;
+    }
+
+    .verified-badge {
+      background-color: rgba(52, 199, 89, 0.12);
+      color: #30d158;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+
+    .rating-badge {
+      background-color: rgba(255, 255, 255, 0.08);
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+
+    .stars { color: #ffcc00; margin: 0 4px; }
+    .reviews-count { color: #8e8e93; }
+
+    /* Карточки "Объявления" и "В избранном" */
+    .stats-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background-color: #1c1c1e;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: transform 0.1s ease, border-color 0.2s ease, opacity 0.1s ease;
+      user-select: none;
+    }
+
+    .stat-card:active {
+      transform: scale(0.97);
+      opacity: 0.8;
+    }
+
+    .stat-card.active {
+      border-color: #007aff;
+    }
+
+    .stat-number {
+      font-size: 26px;
+      font-weight: 700;
+      color: #0a84ff;
+      margin-bottom: 2px;
+    }
+
+    .stat-title {
+      font-size: 14px;
+      color: #8e8e93;
+    }
+
+    /* Вкладки Мои товары / Отзывы */
+    .tab-switcher {
+      display: flex;
+      background-color: #1c1c1e;
+      border-radius: 12px;
+      padding: 2px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #ffffff;
+      padding: 10px 0;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background-color: #2c2c2e;
+    }
+
+    /* Сетка товаров */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .product-card {
+      background-color: #1c1c1e;
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .product-image-container {
+      position: relative;
+      width: 100%;
+      padding-top: 100%;
+    }
+
+    .product-image {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .product-details { padding: 10px 12px 12px; }
+    .product-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .product-location { font-size: 12px; color: #8e8e93; margin-bottom: 6px; }
+    .product-price { font-size: 16px; font-weight: 700; color: #0a84ff; }
+
+    /* МОДАЛЬНОЕ ОКНО ТОВАРА (КАК НА СКРИНШОТЕ) */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background-color: #1c1c1e;
+      border-radius: 24px;
+      padding: 16px;
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 24px; right: 24px;
+      background: rgba(0,0,0,0.5);
+      border: none;
+      color: white;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .modal-img {
+      width: 100%;
+      height: 260px;
+      object-fit: cover;
+      border-radius: 16px;
+      margin-bottom: 12px;
+    }
+
+    .modal-tags {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .tag {
+      background-color: #2c2c2e;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      color: #8e8e93;
+    }
+
+    .tag.location { color: #0a84ff; }
+
+    .modal-price {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0a84ff;
+      margin-bottom: 4px;
+    }
+
+    .modal-item-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    /* Плашка продавца (КЛИКАБЕЛЬНАЯ!) */
+    .seller-card {
+      background-color: #2c2c2e;
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+      user-select: none;
+    }
+
+    .seller-card:active {
+      background-color: #3a3a3c;
+      transform: scale(0.98);
+    }
+
+    .seller-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background-color: #555;
+    }
+
+    .seller-info-name { font-weight: 700; font-size: 15px; }
+    .seller-info-handle { font-size: 13px; color: #2f80ed; }
+    .seller-link { font-size: 13px; color: #0a84ff; margin-top: 2px; }
+
+    .modal-btn {
+      width: 100%;
+      background-color: #2b99ff;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- ЭКРАН АВТОРИЗАЦИИ -->
-    <div id="auth-screen" class="auth-screen hidden">
-        <div class="auth-card">
-            <div class="auth-logo">🛍️</div>
-            <h1 class="auth-title">Маркетплейс</h1>
-            <p class="auth-subtitle">Покупайте и продавайте товары прямо в Telegram</p>
-
-            <div id="tg-auth-box" class="auth-box hidden">
-                <div class="user-preview">
-                    <div id="auth-avatar" class="preview-avatar">👤</div>
-                    <div class="preview-info">
-                        <div id="auth-name" class="preview-name">Пользователь</div>
-                        <div id="auth-username" class="preview-username">@username</div>
-                    </div>
-                </div>
-                <button id="tg-login-btn" class="auth-btn tg-btn">Войти через Telegram</button>
-            </div>
-
-            <div id="guest-auth-box" class="auth-box hidden">
-                <input type="text" id="guest-name-input" class="auth-input" placeholder="Ваше имя">
-                <input type="text" id="guest-tg-input" class="auth-input" placeholder="Ваш @username в Telegram">
-                <button id="guest-login-btn" class="auth-btn">Войти</button>
-            </div>
-        </div>
+  <!-- Профиль пользователя -->
+  <div class="profile-card">
+    <img src="https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=200" class="avatar" id="user-avatar" alt="Avatar">
+    <div class="username" id="user-name">3YUG</div>
+    <a href="#" class="user-handle" id="user-handle">@donovanproduct3</a>
+    <div class="verified-badge">✓ Профиль подтверждён</div>
+    <div class="rating-badge">
+      <strong>4.9</strong>
+      <span class="stars">★★★★★</span>
+      <span class="reviews-count">(2 отзывов)</span>
     </div>
+  </div>
 
-    <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
-    <div id="app" class="hidden">
-        
-        <!-- Вкладка: Все объявления -->
-        <div id="tab-home" class="tab-content">
-            <div class="header">
-                <div class="search-row">
-                    <input type="text" class="search-input" placeholder="Поиск товаров...">
-                    <select id="city-filter" class="city-select">
-                        <option value="all">📍 Все города</option>
-                        <option value="Минск">Минск</option>
-                        <option value="Гродно">Гродно</option>
-                        <option value="Брест">Брест</option>
-                        <option value="Гомель">Гомель</option>
-                        <option value="Витебск">Витебск</option>
-                        <option value="Могилев">Могилев</option>
-                    </select>
-                    <button id="theme-toggle" class="theme-btn">🌙</button>
-                </div>
-                <div class="categories-bar">
-                    <button class="cat-btn active" data-cat="all">Все</button>
-                    <button class="cat-btn fav-cat-btn" data-cat="favorites">❤️ Избранное</button>
-                    <button class="cat-btn" data-cat="Электроника">📱 Электроника</button>
-                    <button class="cat-btn" data-cat="Одежда">👕 Одежда</button>
-                    <button class="cat-btn" data-cat="Обувь">👟 Обувь</button>
-                    <button class="cat-btn" data-cat="Аксессуары">🎒 Аксессуары</button>
-                    <button class="cat-btn" data-cat="Другое">📦 Другое</button>
-                </div>
-            </div>
-            <div id="products" class="products-grid"></div>
-        </div>
-
-        <!-- Вкладка: Мои товары -->
-        <div id="tab-my-ads" class="tab-content hidden">
-            <h2 style="margin-top:0; font-size: 20px;">Мои объявления</h2>
-            <div id="my-products-tab-grid" class="products-grid"></div>
-        </div>
-
-        <!-- Вкладка: Мой Профиль -->
-        <div id="tab-profile" class="tab-content hidden">
-            <div class="profile-card">
-                <div id="user-avatar" class="profile-avatar">👤</div>
-                <h2 id="user-name" class="profile-name">Имя Пользователя</h2>
-                <div id="user-tg-tag" class="profile-username">@username</div>
-
-                <div id="profile-badge" class="profile-badge unverified">❌ Профиль не подтвержден</div>
-                <button id="open-verify-btn" class="verify-action-btn">Подтвердить профиль</button>
-
-                <div class="rating-box">
-                    <span class="rating-score">4.9</span>
-                    <span class="rating-stars">⭐⭐⭐⭐⭐</span>
-                    <span id="profile-reviews-count" class="rating-count">(2 отзыва)</span>
-                </div>
-            </div>
-
-            <div class="profile-stats">
-                <div class="stat-card">
-                    <div id="my-ads-count" class="stat-value">0</div>
-                    <div class="stat-label">Объявления</div>
-                </div>
-                <div class="stat-card">
-                    <div id="fav-ads-count" class="stat-value">0</div>
-                    <div class="stat-label">В избранном</div>
-                </div>
-            </div>
-
-            <div class="profile-tabs-bar">
-                <button class="p-tab-btn active" data-ptab="sec-my-products">Мои товары</button>
-                <button class="p-tab-btn" data-ptab="sec-reviews">Отзывы</button>
-            </div>
-
-            <div id="sec-my-products" class="profile-section">
-                <div id="my-products" class="products-grid"></div>
-            </div>
-
-            <div id="sec-reviews" class="profile-section hidden">
-                <div id="reviews-list" class="reviews-list"></div>
-            </div>
-
-            <button id="logout-btn" class="logout-btn" style="width:100%; margin-top:20px;">Выйти из аккаунта</button>
-        </div>
-
-        <!-- Нижняя навигация -->
-        <nav class="bottom-nav">
-            <button class="nav-item active" data-tab="tab-home">
-                <span class="nav-icon">🛍️</span>
-                <span>Объявления</span>
-            </button>
-            <button class="nav-item" data-tab="tab-my-ads">
-                <span class="nav-icon">📦</span>
-                <span>Мои товары</span>
-            </button>
-            <button class="nav-item" data-tab="tab-profile">
-                <span class="nav-icon">👤</span>
-                <span>Профиль</span>
-            </button>
-        </nav>
-
-        <button id="open-modal-btn" class="add-btn">+</button>
+  <!-- КАРТОЧКИ: ОБЪЯВЛЕНИЯ И ИЗБРАННОЕ -->
+  <div class="stats-container">
+    <div class="stat-card active" id="card-ads">
+      <div class="stat-number">2</div>
+      <div class="stat-title">Объявления</div>
     </div>
-
-    <!-- Модалка: Добавление/Редактирование товара -->
-    <div id="modal" class="modal hidden">
-        <div class="modal-content">
-            <h2 id="modal-title">Добавить объявление</h2>
-            <input type="text" id="title-input" placeholder="Название товара">
-            <input type="text" id="price-input" placeholder="Цена (например: 2500)">
-            
-            <select id="category-select" class="select-input">
-                <option value="Электроника">📱 Электроника</option>
-                <option value="Одежда">👕 Одежда</option>
-                <option value="Обувь">👟 Обувь</option>
-                <option value="Аксессуары">🎒 Аксессуары</option>
-                <option value="Другое" selected>📦 Другое</option>
-            </select>
-
-            <select id="city-select" class="select-input">
-                <option value="Минск" selected>Минск</option>
-                <option value="Гродно">Гродно</option>
-                <option value="Брест">Брест</option>
-                <option value="Гомель">Гомель</option>
-                <option value="Витебск">Витебск</option>
-                <option value="Могилев">Могилев</option>
-            </select>
-
-            <input type="text" id="seller-input" placeholder="Имя продавца">
-            <input type="text" id="telegram-input" placeholder="Telegram (например: @username)">
-            <textarea id="desc-input" placeholder="Описание товара..." rows="3"></textarea>
-
-            <label class="file-label" for="image-file-input">📸 Выбрать фото (до 4 шт)</label>
-            <input type="file" id="image-file-input" accept="image/*" multiple style="display: none;">
-            <div id="file-name" class="file-name">Файлы не выбраны</div>
-
-            <div class="modal-buttons">
-                <button id="close-modal-btn" class="btn-secondary">Отмена</button>
-                <button id="save-btn" class="btn-primary">Опубликовать</button>
-            </div>
-        </div>
+    <div class="stat-card" id="card-favs">
+      <div class="stat-number">1</div>
+      <div class="stat-title">В избранном</div>
     </div>
+  </div>
 
-    <!-- Модалка: Просмотр товара -->
-    <div id="view-modal" class="modal hidden">
-        <div class="modal-content view-content">
-            <button id="close-view-btn" class="close-view-btn">✕</button>
-            
-            <div class="gallery-container">
-                <button id="prev-img-btn" class="gallery-nav prev-btn">‹</button>
-                <img id="view-image" class="view-image" src="" alt="Товар">
-                <button id="next-img-btn" class="gallery-nav next-btn">›</button>
-                <div id="gallery-dots" class="gallery-dots"></div>
-            </div>
+  <!-- Вкладки -->
+  <div class="tab-switcher">
+    <button class="tab-btn active" id="tab-btn-products">Мои товары</button>
+    <button class="tab-btn" id="tab-btn-reviews">Отзывы</button>
+  </div>
 
-            <div class="view-badges">
-                <span id="view-category" class="view-category-badge">Другое</span>
-                <span id="view-city" class="view-city-badge">📍 Минск</span>
-            </div>
-
-            <div id="view-price" class="view-price">0 ₽</div>
-            <h3 id="view-title" class="view-title">Название товара</h3>
-
-            <!-- Кликабельная карточка продавца -->
-            <div id="seller-card-clickable" class="seller-card" style="cursor: pointer;">
-                <div class="seller-avatar">👤</div>
-                <div class="seller-info">
-                    <div id="view-seller" class="seller-name">Продавец</div>
-                    <div id="view-telegram" class="seller-tg">@username</div>
-                    <div style="font-size: 11px; color: #007aff; font-weight: 600; margin-top:2px;">Перейти в профиль продавца ➔</div>
-                </div>
-            </div>
-
-            <div class="view-description-title">Описание</div>
-            <div id="view-desc" class="view-description">Описание отсутствует</div>
-
-            <div class="view-actions">
-                <button id="edit-btn" class="edit-view-btn" style="display:none;">✏️ Изменить</button>
-                <a id="contact-btn" href="#" class="contact-tg-btn">💬 Написать в Telegram</a>
-            </div>
+  <!-- КОНТЕНТ ВКТАДОК -->
+  <div class="tab-content active" id="content-ads">
+    <div class="products-grid">
+      <div class="product-card" onclick="openModal('ваня', '3500 ₽', 'Минск', '𝖁𝖑𝖆𝖉𝖎𝖐', '@lilvfromdablock')">
+        <div class="product-image-container">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400" class="product-image" alt="Товар">
         </div>
-    </div>
-
-    <!-- Модалка: Просмотр чужого профиля -->
-    <div id="public-profile-modal" class="modal hidden">
-        <div class="modal-content view-content">
-            <button id="close-public-profile-btn" class="close-view-btn">✕</button>
-
-            <div class="profile-card">
-                <div class="profile-avatar">👤</div>
-                <h2 id="public-user-name" class="profile-name">Продавец</h2>
-                <div id="public-user-tg" class="profile-username">@username</div>
-                <div class="profile-badge verified">✓ Подтверждённый продавец</div>
-
-                <div class="rating-box">
-                    <span class="rating-score">5.0</span>
-                    <span class="rating-stars">⭐⭐⭐⭐⭐</span>
-                    <span class="rating-count">(2 отзыва)</span>
-                </div>
-            </div>
-
-            <div class="profile-tabs-bar">
-                <button id="pub-tab-ads" class="p-tab-btn active">Товары</button>
-                <button id="pub-tab-reviews" class="p-tab-btn">Отзывы</button>
-            </div>
-
-            <div id="pub-sec-ads" class="profile-section">
-                <div id="public-user-products" class="products-grid"></div>
-            </div>
-
-            <div id="pub-sec-reviews" class="profile-section hidden">
-                <div class="reviews-list">
-                    <div class="review-item">
-                        <div class="review-header">
-                            <span class="review-author">Алексей</span>
-                            <span class="review-stars">⭐⭐⭐⭐⭐</span>
-                        </div>
-                        <p class="review-text">Быстро отправил, упаковал надежно. Товар супер!</p>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-header">
-                            <span class="review-author">Мария</span>
-                            <span class="review-stars">⭐⭐⭐⭐⭐</span>
-                        </div>
-                        <p class="review-text">Всё согласно описанию, вежливый продавец.</p>
-                    </div>
-                </div>
-            </div>
+        <div class="product-details">
+          <div class="product-title">ваня</div>
+          <div class="product-location">📍 Минск</div>
+          <div class="product-price">3500 ₽</div>
         </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Модалка: Подтверждение профиля -->
-    <div id="verify-modal" class="modal hidden">
-        <div class="modal-content verify-modal-content">
-            <div class="verify-icon">📱</div>
-            <h2>Верификация профиля</h2>
-            <p class="verify-desc">Подтвердите номер телефона, чтобы получить галочку проверенного продавца.</p>
-
-            <button id="confirm-tg-phone-btn" class="auth-btn tg-btn tg-btn-phone">Поделиться контактом Telegram</button>
-            <div class="or-divider">или введите вручную</div>
-
-            <input type="tel" id="manual-phone-input" class="auth-input" placeholder="+375 (29) 123-45-67" style="margin-bottom: 12px;">
-            <button id="save-manual-phone-btn" class="auth-btn" style="margin-bottom: 12px;">Сохранить номер</button>
-            <button id="close-verify-modal-btn" class="btn-secondary" style="width:100%;">Отмена</button>
+  <div class="tab-content" id="content-favs">
+    <div class="products-grid">
+      <div class="product-card">
+        <div class="product-image-container">
+          <img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400" class="product-image" alt="Куртка">
         </div>
+        <div class="product-details">
+          <div class="product-title">Куртка Stone Island</div>
+          <div class="product-location">📍 Минск</div>
+          <div class="product-price">25000 ₽</div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script src="script.js"></script>
+  <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
+  <div class="modal-overlay" id="product-modal" style="display: none;">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+      <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400" class="modal-img" id="modal-img" alt="Товар">
+      
+      <div class="modal-tags">
+        <span class="tag">Другое</span>
+        <span class="tag location" id="modal-location">📍 Минск</span>
+      </div>
+
+      <div class="modal-price" id="modal-price">3500 ₽</div>
+      <div class="modal-item-title" id="modal-title">ваня</div>
+
+      <!-- КЛИКАБЕЛЬНАЯ ПЛАШКА ПРОДАВЦА -->
+      <div class="seller-card" id="seller-profile-btn">
+        <div class="seller-avatar"></div>
+        <div>
+          <div class="seller-info-name" id="seller-name">𝖁𝖑𝖆𝖉𝖎𝖐</div>
+          <div class="seller-info-handle" id="seller-handle">@lilvfromdablock</div>
+          <div class="seller-link">Перейти в профиль продавца →</div>
+        </div>
+      </div>
+
+      <button class="modal-btn">💬 Написать в Telegram</button>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. ЛОГИКА ПЕРЕКЛЮЧЕНИЯ В КАРТОЧКЕ ПРОФИЛЯ ---
+    const cardAds = document.getElementById('card-ads');
+    const cardFavs = document.getElementById('card-favs');
+    const btnProducts = document.getElementById('tab-btn-products');
+    const btnReviews = document.getElementById('tab-btn-reviews');
+
+    const contentAds = document.getElementById('content-ads');
+    const contentFavs = document.getElementById('content-favs');
+
+    function resetTabs() {
+      cardAds.classList.remove('active');
+      cardFavs.classList.remove('active');
+      btnProducts.classList.remove('active');
+      btnReviews.classList.remove('active');
+
+      contentAds.classList.remove('active');
+      contentFavs.classList.remove('active');
+    }
+
+    cardAds.addEventListener('click', () => {
+      resetTabs();
+      cardAds.classList.add('active');
+      btnProducts.classList.add('active');
+      contentAds.classList.add('active');
+    });
+
+    cardFavs.addEventListener('click', () => {
+      resetTabs();
+      cardFavs.classList.add('active');
+      contentFavs.classList.add('active');
+    });
+
+    btnProducts.addEventListener('click', () => {
+      resetTabs();
+      cardAds.classList.add('active');
+      btnProducts.classList.add('active');
+      contentAds.classList.add('active');
+    });
+
+    // --- 2. ЛОГИКА МОДАЛКИ И ПЕРЕХОДА НА ПРОФИЛЬ ПРОДАВЦА ---
+    const modal = document.getElementById('product-modal');
+    const sellerBtn = document.getElementById('seller-profile-btn');
+    let currentSellerHandle = '';
+    let currentSellerName = '';
+
+    function openModal(title, price, location, sellerName, sellerHandle) {
+      document.getElementById('modal-title').innerText = title;
+      document.getElementById('modal-price').innerText = price;
+      document.getElementById('modal-location').innerText = '📍 ' + location;
+      document.getElementById('seller-name').innerText = sellerName;
+      document.getElementById('seller-handle').innerText = sellerHandle;
+      
+      currentSellerName = sellerName;
+      currentSellerHandle = sellerHandle;
+
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+
+    // При клике на продавца в модалке
+    sellerBtn.addEventListener('click', () => {
+      // 1. Закрываем модальное окно товара
+      closeModal();
+
+      // 2. Обновляем данные профиля на экранах под этого продавца
+      document.getElementById('user-name').innerText = currentSellerName;
+      document.getElementById('user-handle').innerText = currentSellerHandle;
+
+      // 3. Автоматически переходим на вкладку "Объявления" продавца
+      resetTabs();
+      cardAds.classList.add('active');
+      btnProducts.classList.add('active');
+      contentAds.classList.add('active');
+
+      // Прокручиваем наверх к профилю
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
 </body>
 </html>
