@@ -897,6 +897,7 @@ function openEditModal() {
     document.getElementById('telegram-input').value = product.telegram || '';
     document.getElementById('desc-input').value = product.description || '';
 
+    document.getElementById('modal').classList.add('hidden'); // исправлено сокрытие
     document.getElementById('modal').classList.remove('hidden');
 }
 
@@ -1061,7 +1062,6 @@ document.addEventListener('DOMContentLoaded', () => {
         closePublicProfileBtn.onclick = () => {
             triggerHaptic('light');
             publicProfileModal.classList.add('hidden');
-            // Возвращаем обратно модалку просмотра товара при закрытии профиля
             document.getElementById('view-modal').classList.remove('hidden');
         };
     }
