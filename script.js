@@ -34,7 +34,7 @@ function triggerHaptic(type = 'light') {
 let products = [];
 let favorites = JSON.parse(localStorage.getItem('my_marketplace_favorites')) || [];
 let allReviews = [];
-let myPurchases = []; // Список купленных товаров пользователя
+let myPurchases = [];
 let currentUser = JSON.parse(localStorage.getItem('my_marketplace_user')) || null;
 
 let currentCategory = 'all';
@@ -346,7 +346,6 @@ async function completeVerification(phone) {
     }
 }
 
-// ОТРИСОВКА ВКЛАДКИ «МОИ ПОКУПКИ»
 function renderPurchasesTab() {
     const container = document.getElementById('my-purchases-grid');
     if (!container) return;
@@ -361,8 +360,6 @@ function renderPurchasesTab() {
         const mainImage = (item.images && item.images.length > 0) ? item.images[0] : 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300';
         const card = document.createElement('div');
         card.className = 'product-card';
-        
-        // При клике на купленный товар — открываем его модалку, чтобы выйти на продавца
         card.onclick = () => openPurchasedViewModal(item);
 
         card.innerHTML = `
@@ -375,7 +372,6 @@ function renderPurchasesTab() {
     });
 }
 
-// СПЕЦИАЛЬНОЕ ОТКРЫТИЕ МОДАЛКИ ДЛЯ КУПЛЕННОГО ТОВАРА (ЧТОБЫ РАБОТАЛА СВЯЗЬ С ПРОДАВЦОМ)
 window.openPurchasedViewModal = function(product) {
     triggerHaptic('light');
     
@@ -399,7 +395,6 @@ window.openPurchasedViewModal = function(product) {
         telegram: product.telegram || ''
     };
 
-    // В покупках кнопку «Изменить» прячем всегда (товар уже куплен и удален из каталога)
     document.getElementById('edit-btn').style.display = 'none';
 
     const contactBtn = document.getElementById('contact-btn');
@@ -732,7 +727,6 @@ window.deleteProduct = function(event, id) {
     }
 };
 
-// СОХРАНЕНИЕ ПОКУПКИ И СОЗДАНИЕ ЗАПРОСА НА ОТЗЫВ ПРИ УДАЛЕНИИ
 async function finalizeProductDeletion(buyerUsername) {
     if (!pendingDeleteId) return;
 
@@ -743,7 +737,6 @@ async function finalizeProductDeletion(buyerUsername) {
             let cleanBuyer = buyerUsername.trim().replace('@', '').toLowerCase();
             let sellerTg = (currentUser?.username || '').toLowerCase();
 
-            // 1. Сохраняем товар в историю покупок покупателя
             await db.collection("purchases").add({
                 buyerUsername: cleanBuyer,
                 title: product.title,
@@ -757,7 +750,6 @@ async function finalizeProductDeletion(buyerUsername) {
                 purchasedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // 2. Создаем задачу для отзыва покупателю
             await db.collection("pendingReviews").add({
                 productTitle: product.title,
                 sellerTelegram: sellerTg,
@@ -1044,25 +1036,7 @@ document.addEventListener('DOMContentLoaded', () => {
     listenFirebaseProducts();
     listenFirebaseReviews();
 
-    const saveBuyerBtn = document.getElementById('save-buyer-btn');
-    const skipBuyerBtn = document.getElementById('skip-buyer-btn');
-    const buyerModal = document.getElementById('buyer-modal');
-
-    if (saveBuyerBtn) {
-        saveBuyerBtn.onclick = async () => {
-            const buyerInput = document.getElementById('buyer-username-input').value.trim();
-            buyerModal.classList.add('hidden');
-            await finalizeProductDeletion(buyerInput);
-        };
-    }
-
-    if (skipBuyerBtn) {
-        skipBuyerBtn.onclick = async () => {
-            buyerModal.classList.add('hidden');
-            await finalizeProductDeletion(null);
-        };
-    }
-
+    // ВОССТАНОВЛЕНИЕ КЛИКАБЕЛЬНОСТИ ПЛАШКИ ПРОДАВЦА В МОДАЛКЕ
     const sellerCardClickable = document.getElementById('seller-card-clickable');
     const viewModal = document.getElementById('view-modal');
     const publicProfileModal = document.getElementById('public-profile-modal');
@@ -1097,6 +1071,25 @@ document.addEventListener('DOMContentLoaded', () => {
         closePublicProfileBtn.onclick = () => {
             triggerHaptic('light');
             publicProfileModal.classList.add('hidden');
+        };
+    }
+
+    const saveBuyerBtn = document.getElementById('save-buyer-btn');
+    const skipBuyerBtn = document.getElementById('skip-buyer-btn');
+    const buyerModal = document.getElementById('buyer-modal');
+
+    if (saveBuyerBtn) {
+        saveBuyerBtn.onclick = async () => {
+            const buyerInput = document.getElementById('buyer-username-input').value.trim();
+            buyerModal.classList.add('hidden');
+            await finalizeProductDeletion(buyerInput);
+        };
+    }
+
+    if (skipBuyerBtn) {
+        skipBuyerBtn.onclick = async () => {
+            buyerModal.classList.add('hidden');
+            await finalizeProductDeletion(null);
         };
     }
 
