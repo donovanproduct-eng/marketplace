@@ -41,7 +41,7 @@ let currentCityFilter = 'all';
 let editingProductId = null;
 let currentImageIndex = 0;
 let currentProductImages = [];
-let pendingDeleteId = null; // ID товара, который удаляется прямо сейчас
+let pendingDeleteId = null;
 
 let isDarkTheme = localStorage.getItem('my_marketplace_theme') === 'dark';
 let activeSellerData = { name: '', telegram: '' };
@@ -97,6 +97,29 @@ function listenFirebaseReviews() {
       });
 }
 
+// ФИКСАЦИЯ ПРОСМОТРА ТОВАРА ПОЛЬЗОВАТЕЛЕМ
+async function logProductView(productId) {
+    if (!currentUser || !currentUser.username) return;
+
+    // Не логируем просмотры своих же товаров
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    let pTg = (product.telegram || '').replace('@', '').toLowerCase();
+    let myTg = (currentUser.username || '').toLowerCase();
+    if (pTg === myTg) return;
+
+    try {
+        await db.collection("productViews").add({
+            productId: productId,
+            viewerUsername: currentUser.username,
+            viewerName: currentUser.name,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (e) {
+        console.error("Ошибка записи просмотра:", e);
+    }
+}
+
 // ПРОВЕРКА ПЕНДИНГ-ОТЗЫВОВ ДЛЯ ПОКУПАТЕЛЯ ПРИ ВХОДЕ
 function checkPendingReviewRequests() {
     if (!currentUser || !currentUser.username) return;
@@ -109,7 +132,6 @@ function checkPendingReviewRequests() {
       .get()
       .then((querySnapshot) => {
           if (!querySnapshot.empty) {
-              // Берем первую сделку, по которой еще не оставлен отзыв
               const doc = querySnapshot.docs[0];
               const data = doc.data();
               
@@ -122,7 +144,6 @@ function checkPendingReviewRequests() {
                   reviewModal.classList.remove('hidden');
               }
 
-              // Обработка кнопки отправки отзыва
               const submitBtn = document.getElementById('submit-review-btn');
               const cancelBtn = document.getElementById('cancel-review-btn');
 
@@ -136,7 +157,6 @@ function checkPendingReviewRequests() {
                   }
 
                   try {
-                      // Добавляем отзыв в общую базу отзывов продавцу
                       await db.collection("reviews").add({
                           sellerTelegram: data.sellerTelegram,
                           author: currentUser.name,
@@ -145,7 +165,6 @@ function checkPendingReviewRequests() {
                           createdAt: firebase.firestore.FieldValue.serverTimestamp()
                       });
 
-                      // Отмечаем запрос как выполненный
                       await db.collection("pendingReviews").doc(doc.id).update({ completed: true });
 
                       triggerHaptic('success');
@@ -202,7 +221,7 @@ function checkAuth() {
         renderProfile();
         renderMyProductsTab();
         filterAndRender();
-        checkPendingReviewRequests(); // Проверяем, должен ли этот юзер оставить отзыв
+        checkPendingReviewRequests();
     } else {
         authScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
@@ -492,7 +511,60 @@ window.toggleFavorite = function(event, id) {
     }
 };
 
-// ШАГ 1: НАЖАТИЕ НА КРЕСТИК (УДАЛЕНИЕ ТОВАРА) -> ВЫЗОВ ОКНА ВВОДА ПОКУПАТЕЛЯ
+// ЗАГРУЗКА СПИСКА ПРОСМОТРОВ ДЛЯ МОДАЛКИ УДАЛЕНИЯ
+async function loadRecentViewersForProduct(productId) {
+    const listContainer = document.getElementById('recent-viewers-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '<div style="font-size: 13px; color: var(--text-muted); text-align: center;">Загрузка списка...</div>';
+
+    try {
+        const snapshot = await db.collection("productViews")
+            .where("productId", "==", productId)
+            .orderBy("createdAt", "desc")
+            .limit(10)
+            .get();
+
+        listContainer.innerHTML = '';
+        
+        if (snapshot.empty) {
+            listContainer.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center;">Никто не заходил на этот товар в последнее время</div>';
+            return;
+        }
+
+        // Уникальные пользователи по юзернейму
+        const seenUsers = new Set();
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const username = data.viewerUsername;
+            const name = data.viewerName || username;
+
+            if (username && !seenUsers.has(username)) {
+                seenUsers.add(username);
+
+                const chip = document.createElement('div');
+                chip.className = 'viewer-chip';
+                chip.innerHTML = `<span>👤 ${name}</span> <span style="color: #24A1DE; font-size: 12px;">@${username}</span>`;
+                
+                chip.onclick = () => {
+                    document.getElementById('buyer-username-input').value = username;
+                    triggerHaptic('light');
+                    // Подсветим выбранный
+                    document.querySelectorAll('.viewer-chip').forEach(c => c.style.borderColor = 'transparent');
+                    chip.style.borderColor = '#007aff';
+                    chip.style.borderWidth = '1.5px';
+                    chip.style.borderStyle = 'solid';
+                };
+
+                listContainer.appendChild(chip);
+            }
+        });
+    } catch (e) {
+        console.error("Ошибка загрузки просмотров:", e);
+        listContainer.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center;">Не удалось загрузить историю просмотров</div>';
+    }
+}
+
 window.deleteProduct = function(event, id) {
     event.stopPropagation();
     
@@ -508,15 +580,15 @@ window.deleteProduct = function(event, id) {
         return;
     }
 
-    pendingDeleteId = id; // Сохраняем ID товара
+    pendingDeleteId = id;
     const buyerModal = document.getElementById('buyer-modal');
     if (buyerModal) {
         document.getElementById('buyer-username-input').value = '';
         buyerModal.classList.remove('hidden');
+        loadRecentViewersForProduct(id); // Загружаем тех, кто просматривал товар
     }
 };
 
-// УДАЛЕНИЕ ИЗ ФИРЕБЕЙС И СОХРАНЕНИЕ ЗАПРОСА НА ОТЗЫВ
 async function finalizeProductDeletion(buyerUsername) {
     if (!pendingDeleteId) return;
 
@@ -527,7 +599,6 @@ async function finalizeProductDeletion(buyerUsername) {
             let cleanBuyer = buyerUsername.trim().replace('@', '').toLowerCase();
             let sellerTg = (currentUser?.username || '').toLowerCase();
 
-            // Создаем задачу для отзыва покупателю
             await db.collection("pendingReviews").add({
                 productTitle: product.title,
                 sellerTelegram: sellerTg,
@@ -619,6 +690,9 @@ window.openViewModal = function(id) {
         name: product.seller || 'Продавец',
         telegram: product.telegram || ''
     };
+
+    // Логируем просмотр товара текущим пользователем
+    logProductView(id);
 
     const editBtn = document.getElementById('edit-btn');
     let pTg = (product.telegram || '').replace('@', '').toLowerCase();
@@ -812,7 +886,6 @@ document.addEventListener('DOMContentLoaded', () => {
     listenFirebaseProducts();
     listenFirebaseReviews();
 
-    // Обработка кнопок модалки ввода покупателя при удалении
     const saveBuyerBtn = document.getElementById('save-buyer-btn');
     const skipBuyerBtn = document.getElementById('skip-buyer-btn');
     const buyerModal = document.getElementById('buyer-modal');
