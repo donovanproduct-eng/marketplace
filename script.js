@@ -49,6 +49,9 @@ let currentProductImages = [];
 
 let isDarkTheme = localStorage.getItem('my_marketplace_theme') === 'dark';
 
+// Переменная для хранения данных выбранного в данный момент продавца
+let activeSellerData = { name: '', telegram: '' };
+
 // ПОДПИСКА НА FIREBASE В РЕАЛЬНОМ ВРЕМЕНИ
 function listenFirebaseProducts() {
     db.collection("products")
@@ -66,6 +69,11 @@ function listenFirebaseProducts() {
           filterAndRender();
           renderProfile();
           renderMyProductsTab();
+          
+          // Если открыта модалка чужого профиля, обновляем её товары на лету
+          if (activeSellerData.telegram) {
+              renderPublicProfileProducts(activeSellerData.telegram);
+          }
       }, (err) => {
           console.error("Ошибка Firebase:", err);
       });
@@ -137,7 +145,6 @@ function setupAuthScreen() {
     }
 }
 
-// СИНХРОНИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ И ЕГО ВЕРИФИКАЦИИ С FIREBASE
 async function syncUserWithFirebase() {
     if (!currentUser || !currentUser.username) return;
 
@@ -344,6 +351,45 @@ function renderProfile() {
     renderReviews();
 }
 
+// Отрисовка товаров чужого профиля в модалке
+function renderPublicProfileProducts(sellerTelegram) {
+    const container = document.getElementById('public-user-products');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const cleanSellerTg = sellerTelegram.replace('@', '').toLowerCase();
+    const sellerProducts = products.filter(p => {
+        let pTg = (p.telegram || '').replace('@', '').toLowerCase();
+        return pTg === cleanSellerTg && pTg !== '';
+    });
+
+    if (sellerProducts.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">У этого продавца пока нет других объявлений</div>';
+        return;
+    }
+
+    sellerProducts.forEach(item => {
+        const isFav = favorites.includes(item.id);
+        const mainImage = item.images[0];
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.onclick = () => {
+            // При клике на товар в профиле продавца — закрываем профиль и открываем карточку товара
+            document.getElementById('public-profile-modal').classList.add('hidden');
+            openViewModal(item.id);
+        };
+
+        card.innerHTML = `
+            <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
+            <img class="product-image" src="${mainImage}" alt="${item.title}">
+            <div class="product-title">${item.title}</div>
+            <div class="product-city">📍 ${item.city || 'Минск'}</div>
+            <div class="product-price">${item.price}</div>
+        `;
+        container.appendChild(card);
+    });
+}
+
 window.toggleFavorite = function(event, id) {
     event.stopPropagation();
     if (favorites.includes(id)) {
@@ -356,6 +402,9 @@ window.toggleFavorite = function(event, id) {
     filterAndRender();
     renderProfile();
     renderMyProductsTab();
+    if (activeSellerData.telegram) {
+        renderPublicProfileProducts(activeSellerData.telegram);
+    }
 };
 
 window.deleteProduct = async function(event, id) {
@@ -451,6 +500,12 @@ window.openViewModal = function(id) {
     let tgUser = product.telegram ? ('@' + product.telegram.replace('@', '')) : 'Telegram не указан';
     document.getElementById('view-telegram').textContent = tgUser;
     document.getElementById('view-desc').textContent = product.description || 'Описание отсутствует';
+
+    // Сохраняем актуальные данные текущего продавца для передачи в профиль
+    activeSellerData = {
+        name: product.seller || 'Продавец',
+        telegram: product.telegram || ''
+    };
 
     const editBtn = document.getElementById('edit-btn');
     let pTg = (product.telegram || '').replace('@', '').toLowerCase();
@@ -650,6 +705,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sellerCardClickable) {
         sellerCardClickable.onclick = () => {
             triggerHaptic('light');
+            
+            // Заполняем данные продавца в модалке публичного профиля реальными данными из активного товара
+            const pubNameEl = document.getElementById('public-user-name');
+            const pubTgEl = document.getElementById('public-user-tg');
+
+            if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
+            if (pubTgEl) {
+                let cleanTg = activeSellerData.telegram.trim().replace('@', '');
+                pubTgEl.textContent = cleanTg ? `@${cleanTg}` : '@username';
+            }
+
+            // Рендерим товары этого продавца
+            renderPublicProfileProducts(activeSellerData.telegram);
+
             if (viewModal) viewModal.classList.add('hidden');
             if (publicProfileModal) publicProfileModal.classList.remove('hidden');
         };
@@ -659,6 +728,30 @@ document.addEventListener('DOMContentLoaded', () => {
         closePublicProfileBtn.onclick = () => {
             triggerHaptic('light');
             publicProfileModal.classList.add('hidden');
+        };
+    }
+
+    // Переключение табов внутри модалки чужого профиля (Товары / Отзывы)
+    const pubTabAds = document.getElementById('pub-tab-ads');
+    const pubTabReviews = document.getElementById('pub-tab-reviews');
+    const pubSecAds = document.getElementById('pub-sec-ads');
+    const pubSecReviews = document.getElementById('pub-sec-reviews');
+
+    if (pubTabAds && pubTabReviews && pubSecAds && pubSecReviews) {
+        pubTabAds.onclick = () => {
+            triggerHaptic('selection');
+            pubTabAds.classList.add('active');
+            pubTabReviews.classList.remove('active');
+            pubSecAds.classList.remove('hidden');
+            pubSecReviews.classList.add('hidden');
+        };
+
+        pubTabReviews.onclick = () => {
+            triggerHaptic('selection');
+            pubTabReviews.classList.add('active');
+            pubTabAds.classList.remove('active');
+            pubSecReviews.classList.remove('hidden');
+            pubSecAds.classList.add('hidden');
         };
     }
 
@@ -752,7 +845,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const pTabBtns = document.querySelectorAll('.p-tab-btn');
     
     const modal = document.getElementById('modal');
-    const viewModalEl = document.getElementById('view-modal');
 
     const openBtn = document.getElementById('open-modal-btn');
     const closeBtn = document.getElementById('close-modal-btn');
