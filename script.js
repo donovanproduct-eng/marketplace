@@ -51,7 +51,6 @@ let isDarkTheme = localStorage.getItem('my_marketplace_theme') === 'dark';
 
 let activeSellerData = { name: '', telegram: '' };
 
-// Функция скрытия индикатора загрузки
 function hideLoader() {
     const loader = document.getElementById('loading-spinner');
     if (loader) {
@@ -81,7 +80,6 @@ function listenFirebaseProducts() {
               renderPublicProfileProducts(activeSellerData.telegram);
           }
 
-          // Убираем лоадер после первой успешной загрузки данных
           hideLoader();
       }, (err) => {
           console.error("Ошибка Firebase:", err);
@@ -550,7 +548,10 @@ window.openViewModal = function(id) {
 function closeViewModal() {
     triggerHaptic('light');
     document.getElementById('view-modal').classList.add('hidden');
-    if (tg?.MainButton) tg.MainButton.hide();
+    // Скрываем главную кнопку Telegram при закрытии модалки товара
+    if (tg?.MainButton) {
+        tg.MainButton.hide();
+    }
 }
 
 function openEditModal() {
@@ -571,6 +572,7 @@ function openEditModal() {
     document.getElementById('telegram-input').value = product.telegram || '';
     document.getElementById('desc-input').value = product.description || '';
 
+    document.getElementById('modal').classList.add('hidden'); // исправлено сокрытие
     document.getElementById('modal').classList.remove('hidden');
 }
 
@@ -712,6 +714,11 @@ document.addEventListener('DOMContentLoaded', () => {
         sellerCardClickable.onclick = () => {
             triggerHaptic('light');
             
+            // Скрываем MainButton при переходе из модалки товара в профиль продавца
+            if (tg?.MainButton) {
+                tg.MainButton.hide();
+            }
+
             const pubNameEl = document.getElementById('public-user-name');
             const pubTgEl = document.getElementById('public-user-tg');
 
