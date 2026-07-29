@@ -313,9 +313,25 @@ window.toggleFavorite = function(event, id) {
     renderMyProductsTab();
 };
 
-// УДАЛЕНИЕ ИЗ FIREBASE
+// УДАЛЕНИЕ ИЗ FIREBASE ТОЛЬКО СВОИХ ТОВАРОВ
 window.deleteProduct = async function(event, id) {
     event.stopPropagation();
+    
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+
+    let pTg = (product.telegram || '').replace('@', '').toLowerCase();
+    let myTg = (currentUser?.username || '').toLowerCase();
+
+    // Проверка владельца
+    if (!currentUser || pTg !== myTg || !myTg) {
+        triggerHaptic('error');
+        alert("Вы можете удалять только свои объявления!");
+        return;
+    }
+
+    if (!confirm("Вы уверены, что хотите удалить это объявление?")) return;
+
     try {
         await db.collection("products").doc(id).delete();
         favorites = favorites.filter(favId => favId !== id);
@@ -392,6 +408,17 @@ window.openViewModal = function(id) {
     let tgUser = product.telegram ? ('@' + product.telegram.replace('@', '')) : 'Telegram не указан';
     document.getElementById('view-telegram').textContent = tgUser;
     document.getElementById('view-desc').textContent = product.description || 'Описание отсутствует';
+
+    const editBtn = document.getElementById('edit-btn');
+    let pTg = (product.telegram || '').replace('@', '').toLowerCase();
+    let myTg = (currentUser?.username || '').toLowerCase();
+
+    // Показываем кнопку редактирования только владельцу
+    if (currentUser && pTg === myTg && myTg !== '') {
+        editBtn.style.display = 'block';
+    } else {
+        editBtn.style.display = 'none';
+    }
 
     const contactBtn = document.getElementById('contact-btn');
     if (product.telegram && product.telegram.trim() !== '') {
@@ -511,9 +538,13 @@ function renderProducts(itemsToRender) {
         card.className = 'product-card';
         card.onclick = () => openViewModal(item.id);
 
+        let pTg = (item.telegram || '').replace('@', '').toLowerCase();
+        let myTg = (currentUser?.username || '').toLowerCase();
+        const isMyProduct = currentUser && pTg === myTg && myTg !== '';
+
         card.innerHTML = `
             <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
-            <button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>
+            ${isMyProduct ? `<button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>` : ''}
             <img class="product-image" src="${mainImage}" alt="${item.title}">
             <div class="product-title">${item.title}</div>
             <div class="product-city">📍 ${item.city || 'Минск'}</div>
@@ -523,14 +554,13 @@ function renderProducts(itemsToRender) {
     });
 }
 
-// УЛУЧШЕННОЕ СЖАТИЕ ФОТОГРАФИЙ БЕЗ ПОТЕРИ КАЧЕСТВА
 function compressImage(file, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const maxDim = 1080; // Качество 1080p
+            const maxDim = 1080;
             let width = img.width;
             let height = img.height;
 
@@ -765,7 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeViewBtn) closeViewBtn.onclick = () => closeViewModal();
     if (editBtn) editBtn.onclick = () => openEditModal();
 
-    // СОХРАНЕНИЕ / ОБНОВЛЕНИЕ В FIREBASE С БЫСТРЫМ ЗАКРЫТИЕМ
     if (saveBtn) {
         saveBtn.onclick = async () => {
             const titleInput = document.getElementById('title-input');
@@ -785,7 +814,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let price = priceInput.value.trim() || '0';
             if (!price.includes('₽')) price = price + ' ₽';
 
-            // Мгновенно закрываем окно публикации
             triggerHaptic('success');
             modal.classList.add('hidden');
 
