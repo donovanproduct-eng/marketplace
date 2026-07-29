@@ -445,6 +445,36 @@ body {
     color: var(--text-color);
 }
 
+/* Стили для списка недавних просмотров в модалке */
+.viewers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.viewer-chip {
+    background: var(--btn-secondary-bg);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-color);
+    transition: background-color 0.2s;
+}
+
+.viewer-chip:hover {
+    background-color: #007aff;
+    color: white;
+}
+
 .verify-modal-content { text-align: center; }
 .verify-icon { font-size: 48px; margin-bottom: 8px; }
 .verify-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; margin-bottom: 16px; }
