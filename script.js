@@ -372,7 +372,7 @@ function renderPurchasesTab() {
     });
 }
 
-// Универсальная функция настройки модалки просмотра с гарантированным кликом по продавцу
+// Универсальная функция настройки модалки просмотра
 function setupViewModalCommon(product) {
     editingProductId = null;
     currentProductImages = product.images || ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
@@ -386,7 +386,6 @@ function setupViewModalCommon(product) {
     document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
-    // Очищаем юзернейм
     let rawTg = product.telegram ? String(product.telegram).trim() : '';
     if (rawTg.includes('t.me/')) {
         rawTg = rawTg.split('t.me/')[1].split('/')[0];
@@ -402,7 +401,7 @@ function setupViewModalCommon(product) {
         telegram: cleanTg
     };
 
-    // Настраиваем клик на карточку продавца внутри модалки
+    // Настраиваем клик на карточку продавца (РАБОТАЕТ ВСЕГДА, ДАЖЕ ДЛЯ СВОИХ ТОВАРОВ)
     const sellerCardClickable = document.getElementById('seller-card-clickable');
     const viewModal = document.getElementById('view-modal');
     const publicProfileModal = document.getElementById('public-profile-modal');
@@ -440,6 +439,7 @@ function setupViewModalCommon(product) {
     let pTg = cleanTg.toLowerCase();
     let myTg = (currentUser?.username || '').replace('@', '').toLowerCase();
 
+    // Если это твой товар, показываем кнопку «Изменить»
     if (product.id && currentUser && pTg === myTg && myTg !== '') {
         editBtn.style.display = 'block';
         editingProductId = product.id;
