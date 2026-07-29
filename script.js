@@ -33,7 +33,7 @@ function triggerHaptic(type = 'light') {
 
 let products = [];
 let favorites = JSON.parse(localStorage.getItem('my_marketplace_favorites')) || [];
-let reviews = [];
+let allReviews = []; // Все отзывы из базы
 let currentUser = JSON.parse(localStorage.getItem('my_marketplace_user')) || null;
 
 let currentCategory = 'all';
@@ -73,6 +73,7 @@ function listenFirebaseProducts() {
           
           if (activeSellerData.telegram) {
               renderPublicProfileProducts(activeSellerData.telegram);
+              renderPublicProfileReviews(activeSellerData.telegram);
           }
 
           hideLoader();
@@ -85,13 +86,15 @@ function listenFirebaseProducts() {
 // ПОДПИСКА НА FIREBASE (ОТЗЫВЫ)
 function listenFirebaseReviews() {
     db.collection("reviews")
-      .orderBy("createdAt", "desc")
       .onSnapshot((snapshot) => {
-          reviews = [];
+          allReviews = [];
           snapshot.forEach((doc) => {
-              reviews.push({ id: doc.id, ...doc.data() });
+              allReviews.push({ id: doc.id, ...doc.data() });
           });
-          renderReviews();
+          renderProfile(); // Обновляет отзывы в личном профиле
+          if (activeSellerData.telegram) {
+              renderPublicProfileReviews(activeSellerData.telegram); // Обновляет в чужом
+          }
       }, (err) => {
           console.error("Ошибка Firebase (отзывы):", err);
       });
@@ -105,7 +108,7 @@ async function logProductView(productId) {
     if (!product) return;
     let pTg = (product.telegram || '').replace('@', '').toLowerCase();
     let myTg = (currentUser.username || '').toLowerCase();
-    if (pTg === myTg) return; // Свои просмотры не пишем
+    if (pTg === myTg) return;
 
     try {
         await db.collection("productViews").add({
@@ -156,8 +159,9 @@ function checkPendingReviewRequests() {
                   }
 
                   try {
+                      // Сохраняем отзыв строго с привязкой к продавцу (sellerTelegram)
                       await db.collection("reviews").add({
-                          sellerTelegram: data.sellerTelegram,
+                          sellerTelegram: data.sellerTelegram.toLowerCase(),
                           author: currentUser.name,
                           stars: stars,
                           text: text,
@@ -323,19 +327,23 @@ async function completeVerification(phone) {
     }
 }
 
+// ОТРИСОВКА ОТЗЫВОВ ДЛЯ СОБСТВЕННОГО ПРОФИЛЯ
 function renderReviews() {
     const list = document.getElementById('reviews-list');
-    if (!list) return;
+    if (!list || !currentUser) return;
     list.innerHTML = '';
 
-    document.getElementById('profile-reviews-count').textContent = `(${reviews.length} отзывов)`;
+    const myTg = currentUser.username.replace('@', '').toLowerCase();
+    const myReviews = allReviews.filter(r => (r.sellerTelegram || '').toLowerCase() === myTg);
 
-    if (reviews.length === 0) {
+    document.getElementById('profile-reviews-count').textContent = `(${myReviews.length} отзывов)`;
+
+    if (myReviews.length === 0) {
         list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 10px;">Пока нет отзывов</div>';
         return;
     }
 
-    reviews.forEach(r => {
+    myReviews.forEach(r => {
         const item = document.createElement('div');
         item.className = 'review-item';
         let starsStr = '⭐'.repeat(parseInt(r.stars || 5));
@@ -347,6 +355,35 @@ function renderReviews() {
             <p class="review-text">${r.text}</p>
         `;
         list.appendChild(item);
+    });
+}
+
+// ОТРИСОВКА ОТЗЫВОВ ДЛЯ ЧУЖОГО (ПУБЛИЧНОГО) ПРОФИЛЯ
+function renderPublicProfileReviews(sellerTelegram) {
+    const container = document.querySelector('#public-profile-modal #pub-sec-reviews .reviews-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const cleanSellerTg = sellerTelegram.replace('@', '').toLowerCase();
+    const sellerReviews = allReviews.filter(r => (r.sellerTelegram || '').toLowerCase() === cleanSellerTg);
+
+    if (sellerReviews.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">У этого продавца пока нет отзывов</div>';
+        return;
+    }
+
+    sellerReviews.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'review-item';
+        let starsStr = '⭐'.repeat(parseInt(r.stars || 5));
+        item.innerHTML = `
+            <div class="review-header">
+                <span class="review-author">${r.author}</span>
+                <span class="review-stars">${starsStr}</span>
+            </div>
+            <p class="review-text">${r.text}</p>
+        `;
+        container.appendChild(item);
     });
 }
 
@@ -510,14 +547,12 @@ window.toggleFavorite = function(event, id) {
     }
 };
 
-// ЗАГРУЗКА СПИСКА ПРОСМОТРОВ БЕЗ ЗАВИСИМОСТИ ОТ СОСТАВНОГО ИНДЕКСА
 async function loadRecentViewersForProduct(productId) {
     const listContainer = document.getElementById('recent-viewers-list');
     if (!listContainer) return;
     listContainer.innerHTML = '<div style="font-size: 13px; color: var(--text-muted); text-align: center;">Загрузка списка...</div>';
 
     try {
-        // Загружаем просмотры только по productId без orderBy, чтобы избежать ошибки индексов Firebase
         const snapshot = await db.collection("productViews")
             .where("productId", "==", productId)
             .get();
@@ -529,7 +564,6 @@ async function loadRecentViewersForProduct(productId) {
             return;
         }
 
-        // Собираем все документы и сортируем в JavaScript по дате (сначала свежие)
         let views = [];
         snapshot.forEach(doc => {
             views.push(doc.data());
@@ -704,7 +738,6 @@ window.openViewModal = function(id) {
         telegram: product.telegram || ''
     };
 
-    // Записываем просмотр товара в базу
     logProductView(id);
 
     const editBtn = document.getElementById('edit-btn');
@@ -941,6 +974,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             renderPublicProfileProducts(activeSellerData.telegram);
+            renderPublicProfileReviews(activeSellerData.telegram); // Подтягиваем индивидуальные отзывы продавца
 
             if (viewModal) viewModal.classList.add('hidden');
             if (publicProfileModal) publicProfileModal.classList.remove('hidden');
