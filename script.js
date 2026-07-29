@@ -473,7 +473,7 @@ window.openActiveSellerProfile = function() {
         pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
     }
 
-    // Сбрасываем вкладки профиля на «Товары» по умолчанию
+    // Сбрасываем вкладки на «Товары»
     const pubTabAds = document.getElementById('pub-tab-ads');
     const pubTabReviews = document.getElementById('pub-tab-reviews');
     const pubSecAds = document.getElementById('pub-sec-ads');
@@ -1074,29 +1074,6 @@ document.addEventListener('DOMContentLoaded', () => {
             triggerHaptic('light');
             publicProfileModal.classList.add('hidden');
             document.getElementById('view-modal').classList.remove('hidden');
-        };
-    }
-
-    const pubTabAds = document.getElementById('pub-tab-ads');
-    const pubTabReviews = document.getElementById('pub-tab-reviews');
-    const pubSecAds = document.getElementById('pub-sec-ads');
-    const pubSecReviews = document.getElementById('pub-sec-reviews');
-
-    if (pubTabAds && pubTabReviews && pubSecAds && pubSecReviews) {
-        pubTabAds.onclick = () => {
-            triggerHaptic('selection');
-            pubTabAds.classList.add('active');
-            pubTabReviews.classList.remove('active');
-            pubSecAds.classList.remove('hidden');
-            pubSecReviews.classList.add('hidden');
-        };
-
-        pubTabReviews.onclick = () => {
-            triggerHaptic('selection');
-            pubTabReviews.classList.add('active');
-            pubTabAds.classList.remove('active');
-            pubSecReviews.classList.remove('hidden');
-            pubSecAds.classList.add('hidden');
         };
     }
 
