@@ -372,7 +372,7 @@ function renderPurchasesTab() {
     });
 }
 
-// Единая логика заполнения и открытия модалки товара (и для обычных, и для купленных)
+// Единая универсальная функция открытия модалки товара + жесткая привязка клика по продавцу
 function setupViewModalCommon(product) {
     editingProductId = null;
     currentProductImages = product.images || ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
@@ -395,11 +395,40 @@ function setupViewModalCommon(product) {
         telegram: product.telegram || ''
     };
 
+    // ГАРАНТИРОВАННО НАСТРАИВАЕМ КЛИК НА ПЛАШКУ ПРОДАВЦА ВНУТРИ МОДАЛКИ
+    const sellerCardClickable = document.getElementById('seller-card-clickable');
+    const viewModal = document.getElementById('view-modal');
+    const publicProfileModal = document.getElementById('public-profile-modal');
+
+    if (sellerCardClickable) {
+        sellerCardClickable.onclick = () => {
+            triggerHaptic('light');
+            
+            if (tg?.MainButton) {
+                tg.MainButton.hide();
+            }
+
+            const pubNameEl = document.getElementById('public-user-name');
+            const pubTgEl = document.getElementById('public-user-tg');
+
+            if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
+            if (pubTgEl) {
+                let cleanTg = activeSellerData.telegram.trim().replace('@', '');
+                pubTgEl.textContent = cleanTg ? `@${cleanTg}` : '@username';
+            }
+
+            renderPublicProfileProducts(activeSellerData.telegram);
+            renderPublicProfileReviews(activeSellerData.telegram);
+
+            if (viewModal) viewModal.classList.add('hidden');
+            if (publicProfileModal) publicProfileModal.classList.remove('hidden');
+        };
+    }
+
     const editBtn = document.getElementById('edit-btn');
     let pTg = (product.telegram || '').replace('@', '').toLowerCase();
     let myTg = (currentUser?.username || '').toLowerCase();
 
-    // Кнопку изменить показываем только для активных собственных товаров
     if (product.id && currentUser && pTg === myTg && myTg !== '') {
         editBtn.style.display = 'block';
         editingProductId = product.id;
@@ -998,41 +1027,9 @@ document.addEventListener('DOMContentLoaded', () => {
     listenFirebaseProducts();
     listenFirebaseReviews();
 
-    const sellerCardClickable = document.getElementById('seller-card-clickable');
-    const viewModal = document.getElementById('view-modal');
-    const publicProfileModal = document.getElementById('public-profile-modal');
-    const closePublicProfileBtn = document.getElementById('close-public-profile-btn');
-
-    if (sellerCardClickable) {
-        sellerCardClickable.onclick = () => {
-            triggerHaptic('light');
-            
-            if (tg?.MainButton) {
-                tg.MainButton.hide();
-            }
-
-            const pubNameEl = document.getElementById('public-user-name');
-            const pubTgEl = document.getElementById('public-user-tg');
-
-            if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
-            if (pubTgEl) {
-                let cleanTg = activeSellerData.telegram.trim().replace('@', '');
-                pubTgEl.textContent = cleanTg ? `@${cleanTg}` : '@username';
-            }
-
-            renderPublicProfileProducts(activeSellerData.telegram);
-            renderPublicProfileReviews(activeSellerData.telegram);
-
-            if (viewModal) viewModal.classList.add('hidden');
-            if (publicProfileModal) publicProfileModal.classList.remove('hidden');
-        };
-    }
-
-    if (closePublicProfileBtn && publicProfileModal) {
-        closePublicProfileBtn.onclick = () => {
-            triggerHaptic('light');
-            publicProfileModal.classList.add('hidden');
-        };
+    const closeVBtn = document.getElementById('close-view-btn');
+    if (closeVBtn) {
+        closeVBtn.onclick = () => closeViewModal();
     }
 
     const saveBuyerBtn = document.getElementById('save-buyer-btn');
@@ -1051,6 +1048,16 @@ document.addEventListener('DOMContentLoaded', () => {
         skipBuyerBtn.onclick = async () => {
             buyerModal.classList.add('hidden');
             await finalizeProductDeletion(null);
+        };
+    }
+
+    const closePublicProfileBtn = document.getElementById('close-public-profile-btn');
+    const publicProfileModal = document.getElementById('public-profile-modal');
+
+    if (closePublicProfileBtn && publicProfileModal) {
+        closePublicProfileBtn.onclick = () => {
+            triggerHaptic('light');
+            publicProfileModal.classList.add('hidden');
         };
     }
 
@@ -1170,7 +1177,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const openBtn = document.getElementById('open-modal-btn');
     const closeBtn = document.getElementById('close-modal-btn');
-    const closeViewBtn = document.getElementById('close-view-btn');
     const editBtn = document.getElementById('edit-btn');
     const saveBtn = document.getElementById('save-btn');
 
@@ -1269,7 +1275,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (openBtn) openBtn.onclick = () => openAddModal();
     if (closeBtn) closeBtn.onclick = () => { triggerHaptic('light'); modal.classList.add('hidden'); };
-    if (closeViewBtn) closeViewBtn.onclick = () => closeViewModal();
     if (editBtn) editBtn.onclick = () => openEditModal();
 
     if (saveBtn) {
