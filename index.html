@@ -98,19 +98,19 @@
             </div>
 
             <div class="profile-stats">
-                <div class="stat-card">
+                <div class="stat-card" id="stat-card-ads" onclick="switchProfileSection('sec-my-products', 0)">
                     <div id="my-ads-count" class="stat-value">0</div>
                     <div class="stat-label">Объявления</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" id="stat-card-favs" onclick="switchProfileSectionToFavorites()">
                     <div id="fav-ads-count" class="stat-value">0</div>
                     <div class="stat-label">В избранном</div>
                 </div>
             </div>
 
             <div class="profile-tabs-bar">
-                <button class="p-tab-btn active" data-ptab="sec-my-products">Мои товары</button>
-                <button class="p-tab-btn" data-ptab="sec-reviews">Отзывы</button>
+                <button class="p-tab-btn active" data-ptab="sec-my-products" id="btn-sec-my-products">Мои товары</button>
+                <button class="p-tab-btn" data-ptab="sec-reviews" id="btn-sec-reviews">Отзывы</button>
             </div>
 
             <div id="sec-my-products" class="profile-section">
@@ -285,6 +285,38 @@
             <button id="close-verify-modal-btn" class="btn-secondary" style="width:100%;">Отмена</button>
         </div>
     </div>
+
+    <script>
+        function switchProfileSection(sectionId, cardIndex) {
+            document.querySelectorAll('.profile-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+
+            document.querySelectorAll('.profile-tabs-bar .p-tab-btn').forEach(btn => btn.classList.remove('active'));
+            if(sectionId === 'sec-my-products') {
+                document.getElementById('btn-sec-my-products').classList.add('active');
+            } else if(sectionId === 'sec-reviews') {
+                document.getElementById('btn-sec-reviews').classList.add('active');
+            }
+
+            document.querySelectorAll('.profile-stats .stat-card').forEach(card => card.classList.remove('active-stat'));
+            if(cardIndex === 0) {
+                document.getElementById('stat-card-ads').classList.add('active-stat');
+            } else {
+                document.getElementById('stat-card-favs').classList.add('active-stat');
+            }
+        }
+
+        function switchProfileSectionToFavorites() {
+            let favCatBtn = document.querySelector('.fav-cat-btn');
+            if (favCatBtn) {
+                favCatBtn.click();
+            }
+            let homeNav = document.querySelector('.nav-item[data-tab="tab-home"]');
+            if (homeNav) {
+                homeNav.click();
+            }
+        }
+    </script>
 
     <script src="script.js"></script>
 </body>
