@@ -455,12 +455,11 @@ function closeViewModal() {
     }
 }
 
-// Жесткое открытие публичного профиля с предварительным закрытием модалки товара
+// Открытие профиля продавца
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
     
-    // Если юзернейм пустой, подставим дефолтный или сообщим
-    let targetTg = activeSellerData.telegram || 'donovanproduct3';
+    let targetTg = activeSellerData.telegram || '';
 
     if (tg?.MainButton) {
         tg.MainButton.hide();
@@ -471,13 +470,25 @@ window.openActiveSellerProfile = function() {
 
     if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
     if (pubTgEl) {
-        pubTgEl.textContent = `@${targetTg}`;
+        pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
+    }
+
+    // Сбрасываем вкладки профиля на «Товары» по умолчанию
+    const pubTabAds = document.getElementById('pub-tab-ads');
+    const pubTabReviews = document.getElementById('pub-tab-reviews');
+    const pubSecAds = document.getElementById('pub-sec-ads');
+    const pubSecReviews = document.getElementById('pub-sec-reviews');
+    
+    if (pubTabAds && pubTabReviews && pubSecAds && pubSecReviews) {
+        pubTabAds.classList.add('active');
+        pubTabReviews.classList.remove('active');
+        pubSecAds.classList.remove('hidden');
+        pubSecReviews.classList.add('hidden');
     }
 
     renderPublicProfileProducts(targetTg);
     renderPublicProfileReviews(targetTg);
 
-    // Сначала полностью гасим модалку товара, затем открываем профиль
     document.getElementById('view-modal').classList.add('hidden');
     document.getElementById('public-profile-modal').classList.remove('hidden');
 };
@@ -512,6 +523,7 @@ function renderReviews() {
     });
 }
 
+// Рендер отзывов в чужом профиле
 function renderPublicProfileReviews(sellerTelegram) {
     const container = document.querySelector('#public-profile-modal #pub-sec-reviews .reviews-list');
     if (!container) return;
@@ -646,6 +658,7 @@ function renderProfile() {
     renderReviews();
 }
 
+// Рендер товаров в чужом профиле
 function renderPublicProfileProducts(sellerTelegram) {
     const container = document.getElementById('public-user-products');
     if (!container) return;
