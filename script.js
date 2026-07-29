@@ -372,7 +372,6 @@ function renderPurchasesTab() {
     });
 }
 
-// Общая логика открытия модалки товара
 function setupViewModalCommon(product) {
     editingProductId = null;
     currentProductImages = product.images || ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
@@ -456,7 +455,7 @@ function closeViewModal() {
     }
 }
 
-// Глобальная функция перехода в профиль продавца (вызывается при клике на блок продавца)
+// Прямой вызов открытия профиля продавца
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
     
@@ -832,7 +831,7 @@ async function finalizeProductDeletion(buyerUsername) {
     }
 
     pendingDeleteId = null;
-}
+};
 
 window.handleTelegramClick = function(event, rawTg, productTitle, productPrice) {
     if (event) event.preventDefault();
@@ -1030,14 +1029,6 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     listenFirebaseProducts();
     listenFirebaseReviews();
-
-    // Прямая привязка клика на блок продавца через DOM (чтобы гарантированно срабатывало)
-    const sellerCardClickable = document.getElementById('seller-card-clickable');
-    if (sellerCardClickable) {
-        sellerCardClickable.addEventListener('click', () => {
-            window.openActiveSellerProfile();
-        });
-    }
 
     const closeVBtn = document.getElementById('close-view-btn');
     if (closeVBtn) {
