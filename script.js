@@ -72,9 +72,9 @@ function listenFirebaseProducts() {
           renderProfile();
           renderMyProductsTab();
           
-          if (activeSellerData.telegram) {
-              renderPublicProfileProducts(activeSellerData.telegram);
-              renderPublicProfileReviews(activeSellerData.telegram);
+          if (window.currentOpenedSellerTg) {
+              renderPublicProfileProducts(window.currentOpenedSellerTg);
+              renderPublicProfileReviews(window.currentOpenedSellerTg);
           }
 
           hideLoader();
@@ -93,8 +93,8 @@ function listenFirebaseReviews() {
               allReviews.push({ id: doc.id, ...doc.data() });
           });
           renderProfile();
-          if (activeSellerData.telegram) {
-              renderPublicProfileReviews(activeSellerData.telegram);
+          if (window.currentOpenedSellerTg) {
+              renderPublicProfileReviews(window.currentOpenedSellerTg);
           }
       }, (err) => {
           console.error("Ошибка Firebase (отзывы):", err);
@@ -455,11 +455,12 @@ function closeViewModal() {
     }
 }
 
-// Открытие профиля продавца
+// Надежное открытие профиля продавца с сохранением сессии
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
     
     let targetTg = activeSellerData.telegram || '';
+    window.currentOpenedSellerTg = targetTg; // Сохраняем глобально для вкладок
 
     if (tg?.MainButton) {
         tg.MainButton.hide();
@@ -473,7 +474,7 @@ window.openActiveSellerProfile = function() {
         pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
     }
 
-    // Сбрасываем вкладки на «Товары» по умолчанию
+    // Сбрасываем вкладки на «Товары»
     const pubTabAds = document.getElementById('pub-tab-ads');
     const pubTabReviews = document.getElementById('pub-tab-reviews');
     const pubSecAds = document.getElementById('pub-sec-ads');
@@ -523,7 +524,7 @@ function renderReviews() {
     });
 }
 
-// Исправленный рендер отзывов в чужом профиле по правильному ID контейнера
+// Рендер отзывов в чужом профиле
 function renderPublicProfileReviews(sellerTelegram) {
     const container = document.getElementById('public-reviews-list');
     if (!container) return;
@@ -1073,6 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
         closePublicProfileBtn.onclick = () => {
             triggerHaptic('light');
             publicProfileModal.classList.add('hidden');
+            window.currentOpenedSellerTg = null; // сбрасываем сессию при закрытии профиля
             document.getElementById('view-modal').classList.remove('hidden');
         };
     }
