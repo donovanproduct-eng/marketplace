@@ -115,11 +115,17 @@
 
             <div class="profile-tabs-bar">
                 <button class="p-tab-btn active" data-ptab="sec-my-products" id="btn-sec-my-products">Мои товары</button>
+                <button class="p-tab-btn" data-ptab="sec-purchases" id="btn-sec-purchases">🛒 Мои покупки</button>
                 <button class="p-tab-btn" data-ptab="sec-reviews" id="btn-sec-reviews">Отзывы</button>
             </div>
 
             <div id="sec-my-products" class="profile-section">
                 <div id="my-products" class="products-grid"></div>
+            </div>
+
+            <!-- Секция: Мои покупки -->
+            <div id="sec-purchases" class="profile-section hidden">
+                <div id="my-purchases-grid" class="products-grid"></div>
             </div>
 
             <div id="sec-reviews" class="profile-section hidden">
@@ -155,9 +161,7 @@
             <h2>Товар продан?</h2>
             <p class="verify-desc">Выберите покупателя из списка тех, кто за последние дни просматривал этот товар:</p>
             
-            <div id="recent-viewers-list" class="viewers-list">
-                <!-- Сюда динамически добавятся пользователи -->
-            </div>
+            <div id="recent-viewers-list" class="viewers-list"></div>
 
             <div class="or-divider">или введите вручную</div>
             <input type="text" id="buyer-username-input" class="auth-input" placeholder="@username покупателя" style="margin-bottom: 12px;">
@@ -300,15 +304,7 @@
             </div>
 
             <div id="pub-sec-reviews" class="profile-section hidden">
-                <div class="reviews-list">
-                    <div class="review-item">
-                        <div class="review-header">
-                            <span class="review-author">Алексей</span>
-                            <span class="review-stars">⭐⭐⭐⭐⭐</span>
-                        </div>
-                        <p class="review-text">Быстро отправил, упаковал надежно. Товар супер!</p>
-                    </div>
-                </div>
+                <div class="reviews-list"></div>
             </div>
         </div>
     </div>
@@ -337,6 +333,8 @@
             document.querySelectorAll('.profile-tabs-bar .p-tab-btn').forEach(btn => btn.classList.remove('active'));
             if(sectionId === 'sec-my-products') {
                 document.getElementById('btn-sec-my-products').classList.add('active');
+            } else if(sectionId === 'sec-purchases') {
+                document.getElementById('btn-sec-purchases').classList.add('active');
             } else if(sectionId === 'sec-reviews') {
                 document.getElementById('btn-sec-reviews').classList.add('active');
             }
