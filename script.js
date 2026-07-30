@@ -1474,7 +1474,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('hidden');
 }
 
 function renderSearchTags() {
@@ -2191,7 +2191,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const addBtn = document.getElementById('open-modal-btn');
             if (addBtn) {
                 if (targetTab === 'tab-my-ads') {
-                    addBtn.classList.remove('hidden'); 
+                    addBtn.classList.add('hidden'); 
                 } else {
                     addBtn.classList.add('hidden'); 
                 }
@@ -2372,7 +2372,7 @@ function handleZoomSwipe() {
     }
 }
 
-// === СИМУЛЯТОР РЕСЕЛЛЕРА (ТОРГ РАЗ В 5 ПРОДАЖ НА РАНДОМ ПЛЮС/МИНУС) ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА (ТОРГ РАЗ В 5 ПРОДАЖ, СУТОЧНЫЕ КВЕСТЫ ПО ЕДИНОМУ ВРЕМЕНИ) ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
@@ -2380,7 +2380,7 @@ let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     warehouseLevel: 0,
     hagglingCounter: 0,
     dailyQuests: {
-        lastResetTime: Date.now(),
+        lastResetTime: getTodayMidnightTimestamp(),
         progress: { sell_2: 0, clean_1: 0, skip_3: 0 },
         claimed: []
     }
@@ -2390,7 +2390,7 @@ if (resellerState.warehouseLevel === undefined) resellerState.warehouseLevel = 0
 if (resellerState.hagglingCounter === undefined) resellerState.hagglingCounter = 0;
 if (!resellerState.dailyQuests) {
     resellerState.dailyQuests = {
-        lastResetTime: Date.now(),
+        lastResetTime: getTodayMidnightTimestamp(),
         progress: { sell_2: 0, clean_1: 0, skip_3: 0 },
         claimed: []
     };
@@ -2404,13 +2404,17 @@ function saveResellerState() {
     updateResellerUI();
 }
 
+// Возвращает timestamp сегодняшней полуночи (00:00:00 UTC) для синхронизации у всех игроков
+function getTodayMidnightTimestamp() {
+    const now = new Date();
+    return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0);
+}
+
 function checkAndResetDailyQuests() {
-    const now = Date.now();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-    
-    if (now - resellerState.dailyQuests.lastResetTime >= twentyFourHours) {
+    const currentMidnight = getTodayMidnightTimestamp();
+    if (resellerState.dailyQuests.lastResetTime < currentMidnight) {
         resellerState.dailyQuests = {
-            lastResetTime: now,
+            lastResetTime: currentMidnight,
             progress: { sell_2: 0, clean_1: 0, skip_3: 0 },
             claimed: []
         };
@@ -2430,8 +2434,10 @@ function updateQuestsTimerUI() {
     checkAndResetDailyQuests();
     const now = Date.now();
     const twentyFourHours = 24 * 60 * 60 * 1000;
-    let timeLeft = twentyFourHours - (now - resellerState.dailyQuests.lastResetTime);
-
+    const currentMidnight = getTodayMidnightTimestamp();
+    const nextMidnight = currentMidnight + twentyFourHours;
+    
+    let timeLeft = nextMidnight - now;
     if (timeLeft < 0) timeLeft = 0;
 
     let hours = Math.floor(timeLeft / (1000 * 60 * 60));
@@ -2730,7 +2736,7 @@ window.resetResellerGame = function() {
         inventory: [], 
         warehouseLevel: 0, 
         hagglingCounter: 0,
-        dailyQuests: { lastResetTime: Date.now(), progress: { sell_2: 0, clean_1: 0, skip_3: 0 }, claimed: [] } 
+        dailyQuests: { lastResetTime: getTodayMidnightTimestamp(), progress: { sell_2: 0, clean_1: 0, skip_3: 0 }, claimed: [] } 
     };
     saveResellerState();
     location.reload();
@@ -2798,7 +2804,7 @@ window.cleanResellerItem = function(index, cost) {
     renderResellerInventory();
 };
 
-// === МЕХАНИКА ТОРГА (РАЗ В 5 ПРОДАЖ, РАНДОМ МИНУС/ПЛЮС) ===
+// === МЕХАНИКА ТОРГА (РАЗ В 5 ПРОДАЖ, РАНДОМ ПЛЮС/МИНУС) ===
 window.trySellWithHaggling = function(index, baseSellPrice) {
     let item = resellerState.inventory[index];
     
@@ -2812,7 +2818,6 @@ window.trySellWithHaggling = function(index, baseSellPrice) {
     if (resellerState.hagglingCounter >= 5) {
         resellerState.hagglingCounter = 0;
         
-        // 50% шанс на торг в плюс (накидывают сверху), 50% на торг в минус (просят скидку)
         let isPlusHaggle = Math.random() < 0.5;
 
         if (isPlusHaggle) {
