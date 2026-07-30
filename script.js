@@ -55,6 +55,7 @@ let editingProductId = null;
 let currentImageIndex = 0;
 let currentProductImages = [];
 let pendingDeleteId = null;
+let tempAvatarBase64 = null; // Для модалки профиля
 
 let isDarkTheme = localStorage.getItem('my_marketplace_theme') === 'dark';
 let activeSellerData = { name: '', telegram: '' };
@@ -122,7 +123,7 @@ function updateSubcategories(categoryValue, selectedSubcategory = '') {
     }
 }
 
-// ПОДПИСКА НА FIREBASE (ТОВАРЫ)
+// ПОДПИСКА НА FIREBASE
 function listenFirebaseProducts() {
     db.collection("products")
       .orderBy("createdAt", "desc")
@@ -151,7 +152,6 @@ function listenFirebaseProducts() {
       });
 }
 
-// ПОДПИСКА НА FIREBASE (ОТЗЫВЫ)
 function listenFirebaseReviews() {
     db.collection("reviews")
       .onSnapshot((snapshot) => {
@@ -168,7 +168,6 @@ function listenFirebaseReviews() {
       });
 }
 
-// ПОДПИСКА НА ПОКУПКИ ПОЛЬЗОВАТЕЛЯ
 function listenFirebasePurchases() {
     if (!currentUser || !currentUser.username) return;
     const cleanMyTg = currentUser.username.replace('@', '').toLowerCase();
@@ -351,10 +350,12 @@ async function syncUserWithFirebase() {
             const data = doc.data();
             currentUser.isVerified = !!data.isVerified;
             currentUser.phone = data.phone || currentUser.phone || '';
-            // Подтягиваем избранное из Firebase для синхронизации на разных устройствах
-            if (data.favorites) {
-                favorites = data.favorites;
-            }
+            
+            // Подтягиваем профиль (описание, кастомная ава, избранное)
+            if (data.bio) currentUser.bio = data.bio;
+            if (data.customAvatar) currentUser.customAvatar = data.customAvatar;
+            if (data.favorites) favorites = data.favorites;
+            
             saveToStorage();
             renderProfile();
             filterAndRender();
@@ -364,7 +365,9 @@ async function syncUserWithFirebase() {
                 username: currentUser.username,
                 isVerified: false,
                 phone: '',
-                favorites: favorites // Сохраняем начальный массив
+                bio: '',
+                customAvatar: '',
+                favorites: favorites 
             });
         }
     } catch (e) {
@@ -379,7 +382,9 @@ async function loginUser(name, username, photoUrl = '') {
         username: cleanUsername,
         photoUrl: photoUrl,
         isVerified: false,
-        phone: ''
+        phone: '',
+        bio: '',
+        customAvatar: ''
     };
     favorites = JSON.parse(localStorage.getItem(`favs_${cleanUsername}`)) || [];
     triggerHaptic('success');
@@ -390,7 +395,7 @@ async function loginUser(name, username, photoUrl = '') {
 function logoutUser() {
     triggerHaptic('warning');
     currentUser = null;
-    favorites = []; // Очищаем избранное при выходе
+    favorites = []; 
     saveToStorage();
     checkAuth();
 }
@@ -548,6 +553,8 @@ window.openActiveSellerProfile = function() {
     const pubNameEl = document.getElementById('public-user-name');
     const pubTgEl = document.getElementById('public-user-tg');
     const pubBadgeEl = document.getElementById('public-profile-badge');
+    const pubAvEl = document.getElementById('public-user-avatar');
+    const pubBioEl = document.getElementById('public-profile-bio');
 
     if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
     if (pubTgEl) pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
@@ -555,18 +562,39 @@ window.openActiveSellerProfile = function() {
     if (pubBadgeEl) {
         pubBadgeEl.textContent = '⏳ Проверка...';
         pubBadgeEl.className = 'profile-badge unverified';
+        if (pubAvEl) pubAvEl.innerHTML = '👤';
+        if (pubBioEl) pubBioEl.style.display = 'none';
         
         if (targetTg) {
             db.collection("users").doc(targetTg.toLowerCase()).get().then(doc => {
-                if (doc.exists && doc.data().isVerified) {
-                    pubBadgeEl.textContent = '✓ Подтверждённый продавец';
-                    pubBadgeEl.className = 'profile-badge verified';
+                if (doc.exists) {
+                    const data = doc.data();
+                    
+                    if (data.isVerified) {
+                        pubBadgeEl.textContent = '✓ Подтверждённый продавец';
+                        pubBadgeEl.className = 'profile-badge verified';
+                    } else {
+                        pubBadgeEl.textContent = '❌ Профиль не подтвержден';
+                        pubBadgeEl.className = 'profile-badge unverified';
+                    }
+
+                    if (pubNameEl && data.name) pubNameEl.textContent = data.name;
+
+                    if (pubAvEl) {
+                        if (data.customAvatar) pubAvEl.innerHTML = `<img src="${data.customAvatar}" alt="Avatar">`;
+                        else pubAvEl.innerHTML = '👤';
+                    }
+
+                    if (pubBioEl) {
+                        pubBioEl.textContent = data.bio || '';
+                        pubBioEl.style.display = data.bio ? 'block' : 'none';
+                    }
                 } else {
                     pubBadgeEl.textContent = '❌ Профиль не подтвержден';
                     pubBadgeEl.className = 'profile-badge unverified';
                 }
             }).catch(e => {
-                console.error("Ошибка загрузки верификации:", e);
+                console.error("Ошибка загрузки профиля продавца:", e);
                 pubBadgeEl.textContent = '❌ Профиль не подтвержден';
                 pubBadgeEl.className = 'profile-badge unverified';
             });
@@ -695,6 +723,7 @@ function renderProfile() {
     const nameEl = document.getElementById('user-name');
     const tgEl = document.getElementById('user-tg-tag');
     const avatarEl = document.getElementById('user-avatar');
+    const bioEl = document.getElementById('profile-bio');
 
     const badgeEl = document.getElementById('profile-badge');
     const openVerifyBtn = document.getElementById('open-verify-btn');
@@ -702,10 +731,17 @@ function renderProfile() {
     nameEl.textContent = currentUser.name;
     tgEl.textContent = `@${currentUser.username}`;
 
-    if (currentUser.photoUrl) {
+    if (currentUser.customAvatar) {
+        avatarEl.innerHTML = `<img src="${currentUser.customAvatar}" alt="Avatar">`;
+    } else if (currentUser.photoUrl) {
         avatarEl.innerHTML = `<img src="${currentUser.photoUrl}" alt="Avatar">`;
     } else {
         avatarEl.innerHTML = '👤';
+    }
+
+    if (bioEl) {
+        bioEl.textContent = currentUser.bio || '';
+        bioEl.style.display = currentUser.bio ? 'block' : 'none';
     }
 
     if (currentUser.isVerified) {
@@ -816,7 +852,6 @@ window.toggleFavorite = async function(event, id) {
         renderPublicProfileProducts(activeSellerData.telegram);
     }
 
-    // Сохраняем в Firebase
     if (currentUser && currentUser.username) {
         try {
             await db.collection("users").doc(currentUser.username.toLowerCase()).update({
@@ -1238,6 +1273,91 @@ document.addEventListener('DOMContentLoaded', () => {
     const guestLoginBtn = document.getElementById('guest-login-btn');
     const logoutBtn = document.getElementById('logout-btn');
 
+    // Настройки профиля
+    const openEditProfileBtn = document.getElementById('open-edit-profile-btn');
+    const closeEditProfileBtn = document.getElementById('close-edit-profile-btn');
+    const editProfileModal = document.getElementById('edit-profile-modal');
+    const saveProfileBtn = document.getElementById('save-profile-btn');
+    const avatarFileInput = document.getElementById('avatar-file-input');
+    const editAvatarPreview = document.getElementById('edit-avatar-preview');
+
+    if (openEditProfileBtn) {
+        openEditProfileBtn.onclick = () => {
+            triggerHaptic('light');
+            document.getElementById('edit-name-input').value = currentUser.name || '';
+            document.getElementById('edit-bio-input').value = currentUser.bio || '';
+            
+            if (currentUser.customAvatar) {
+                editAvatarPreview.innerHTML = `<img src="${currentUser.customAvatar}">`;
+            } else if (currentUser.photoUrl) {
+                editAvatarPreview.innerHTML = `<img src="${currentUser.photoUrl}">`;
+            } else {
+                editAvatarPreview.innerHTML = '👤';
+            }
+            tempAvatarBase64 = null;
+            editProfileModal.classList.remove('hidden');
+        };
+    }
+
+    if (closeEditProfileBtn) {
+        closeEditProfileBtn.onclick = () => {
+            triggerHaptic('light');
+            editProfileModal.classList.add('hidden');
+        }
+    }
+
+    if (avatarFileInput) {
+        avatarFileInput.addEventListener('change', () => {
+            if (avatarFileInput.files && avatarFileInput.files[0]) {
+                compressImage(avatarFileInput.files[0], (base64) => {
+                    if (base64) {
+                        tempAvatarBase64 = base64;
+                        editAvatarPreview.innerHTML = `<img src="${base64}" style="width:100%; height:100%; object-fit:cover;">`;
+                    }
+                });
+            }
+        });
+    }
+
+    if (saveProfileBtn) {
+        saveProfileBtn.onclick = async () => {
+            const newName = document.getElementById('edit-name-input').value.trim();
+            const newBio = document.getElementById('edit-bio-input').value.trim();
+
+            if (!newName) {
+                triggerHaptic('error');
+                alert('Имя не может быть пустым!');
+                return;
+            }
+
+            let updates = {
+                name: newName,
+                bio: newBio
+            };
+
+            if (tempAvatarBase64) {
+                updates.customAvatar = tempAvatarBase64;
+            }
+
+            try {
+                await db.collection("users").doc(currentUser.username.toLowerCase()).update(updates);
+                
+                currentUser.name = newName;
+                currentUser.bio = newBio;
+                if (tempAvatarBase64) currentUser.customAvatar = tempAvatarBase64;
+                
+                saveToStorage();
+                renderProfile();
+                
+                triggerHaptic('success');
+                editProfileModal.classList.add('hidden');
+            } catch (e) {
+                console.error('Ошибка сохранения профиля', e);
+                alert('Произошла ошибка при сохранении.');
+            }
+        };
+    }
+
     const openVerifyBtn = document.getElementById('open-verify-btn');
     const verifyModal = document.getElementById('verify-modal');
     const closeVerifyModalBtn = document.getElementById('close-verify-modal-btn');
@@ -1375,7 +1495,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const addBtn = document.getElementById('open-modal-btn');
             if (addBtn) {
-                // Показываем кнопку только на вкладке "Мои товары"
                 if (targetTab === 'tab-my-ads') {
                     addBtn.style.display = ''; 
                 } else {
