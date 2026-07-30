@@ -24,7 +24,6 @@ const db = firebase.firestore();
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
-    // Проверяем, открыта ли вкладка реселлера. Если нет — не играем звук.
     const resellerTab = document.getElementById('tab-reseller');
     if (!resellerTab || resellerTab.classList.contains('hidden')) {
         return;
@@ -674,6 +673,8 @@ async function syncUserWithFirebase() {
             const data = doc.data();
             currentUser.isVerified = !!data.isVerified;
             currentUser.phone = data.phone || currentUser.phone || '';
+            currentUser.coins = data.coins !== undefined ? data.coins : 100;
+            currentUser.lastDailyBonus = data.lastDailyBonus || null;
             
             if (data.bio) currentUser.bio = data.bio;
             if (data.customAvatar) currentUser.customAvatar = data.customAvatar;
@@ -687,6 +688,7 @@ async function syncUserWithFirebase() {
             const user = tg?.initDataUnsafe?.user;
             let tgPhoto = user?.photo_url || '';
             currentUser.photoUrl = tgPhoto;
+            currentUser.coins = 100;
 
             await userDocRef.set({
                 name: currentUser.name,
@@ -696,7 +698,9 @@ async function syncUserWithFirebase() {
                 bio: '',
                 customAvatar: '',
                 photoUrl: tgPhoto,
-                favorites: favorites 
+                favorites: favorites,
+                coins: 100,
+                lastDailyBonus: null
             });
         }
     } catch (e) {
@@ -713,7 +717,9 @@ async function loginUser(name, username, photoUrl = '') {
         isVerified: false,
         phone: '',
         bio: '',
-        customAvatar: ''
+        customAvatar: '',
+        coins: 100,
+        lastDailyBonus: null
     };
     favorites = JSON.parse(localStorage.getItem(`favs_${cleanUsername}`)) || [];
     triggerHaptic('success');
@@ -730,6 +736,38 @@ function logoutUser() {
     saveToStorage();
     checkAuth();
 }
+
+// === ЕЖЕДНЕВНЫЙ БОНУС ВАЛЮТЫ ===
+window.claimDailyBonus = async function() {
+    if (!currentUser) return;
+
+    const now = new Date();
+    const todayStr = `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
+
+    if (currentUser.lastDailyBonus === todayStr) {
+        triggerHaptic('error');
+        alert('Вы уже забирали сегодняшний бонус! Приходите завтра 🎁');
+        return;
+    }
+
+    const reward = 25;
+    currentUser.coins = (currentUser.coins || 0) + reward;
+    currentUser.lastDailyBonus = todayStr;
+
+    triggerHaptic('success');
+    saveToStorage();
+    renderProfile();
+
+    try {
+        await db.collection("users").doc(currentUser.username.toLowerCase()).update({
+            coins: currentUser.coins,
+            lastDailyBonus: todayStr
+        });
+        alert(`🎉 Вы получили ежедневный бонус: +${reward} Маркет-Коинов!`);
+    } catch (e) {
+        console.error("Ошибка начисления бонуса:", e);
+    }
+};
 
 async function completeVerification(phone) {
     if (!currentUser) return;
@@ -1129,9 +1167,27 @@ function renderProfile() {
     const bioEl = document.getElementById('profile-bio');
     const badgeEl = document.getElementById('profile-badge');
     const openVerifyBtn = document.getElementById('open-verify-btn');
+    const coinsEl = document.getElementById('user-coins-count');
+    const dailyBtn = document.getElementById('daily-bonus-btn');
 
     nameEl.textContent = currentUser.name;
     tgEl.textContent = `@${currentUser.username}`;
+    if (coinsEl) coinsEl.textContent = `💎 ${currentUser.coins || 0}`;
+
+    // Проверка активности кнопки бонуса
+    const now = new Date();
+    const todayStr = `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
+    if (dailyBtn) {
+        if (currentUser.lastDailyBonus === todayStr) {
+            dailyBtn.disabled = true;
+            dailyBtn.textContent = '🎁 Завтра +25 💎';
+            dailyBtn.style.opacity = '0.5';
+        } else {
+            dailyBtn.disabled = false;
+            dailyBtn.textContent = '🎁 Бонус +25 💎';
+            dailyBtn.style.opacity = '1';
+        }
+    }
 
     if (currentUser.customAvatar) {
         avatarEl.innerHTML = `<img src="${currentUser.customAvatar}" alt="Avatar">`;
@@ -1652,33 +1708,35 @@ function filterAndRender() {
 
 function renderProducts(itemsToRender) {
     const container = document.getElementById('products');
+    const vipContainer = document.getElementById('vip-products-grid');
+    const vipBox = document.getElementById('vip-products-container');
+
     if (!container) return;
     container.innerHTML = '';
+    if (vipContainer) vipContainer.innerHTML = '';
 
     if (itemsToRender.length === 0) {
         container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">Ничего не найдено</div>';
+        if (vipBox) vipBox.classList.add('hidden');
         return;
     }
 
-    itemsToRender.forEach(item => {
-        const isFav = favorites.includes(item.id);
-        const mainImage = item.images[0];
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.onclick = () => openViewModal(item.id);
+    // Разделение на VIP и обычные
+    const vipItems = itemsToRender.filter(item => item.isVip);
+    const normalItems = itemsToRender.filter(item => !item.isVip);
 
-        let pTg = (item.telegram || '').replace('@', '').toLowerCase();
-        let myTg = (currentUser?.username || '').toLowerCase();
-        const isMyProduct = currentUser && pTg === myTg && myTg !== '';
+    if (vipItems.length > 0 && vipContainer && vipBox) {
+        vipBox.classList.remove('hidden');
+        vipItems.forEach(item => {
+            const card = createProductCardHtml(item);
+            vipContainer.appendChild(card);
+        });
+    } else if (vipBox) {
+        vipBox.classList.add('hidden');
+    }
 
-        card.innerHTML = `
-            <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
-            ${isMyProduct ? `<button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>` : ''}
-            <img class="product-image" src="${mainImage}" alt="${item.title}" loading="lazy">
-            <div class="product-title">${item.title}</div>
-            <div class="product-city">${item.city || 'Минск'}</div>
-            <div class="product-price">${item.price}</div>
-        `;
+    normalItems.forEach(item => {
+        const card = createProductCardHtml(item);
         container.appendChild(card);
     });
 
@@ -1688,6 +1746,33 @@ function renderProducts(itemsToRender) {
         spinner.textContent = 'Прокрутите вниз для загрузки других товаров...';
         container.appendChild(spinner);
     }
+}
+
+function createProductCardHtml(item) {
+    const isFav = favorites.includes(item.id);
+    const mainImage = item.images[0];
+    const card = document.createElement('div');
+    card.className = `product-card ${item.isHighlighted ? 'highlighted-card' : ''} ${item.isVip ? 'vip-card' : ''}`;
+    card.onclick = () => openViewModal(item.id);
+
+    let pTg = (item.telegram || '').replace('@', '').toLowerCase();
+    let myTg = (currentUser?.username || '').toLowerCase();
+    const isMyProduct = currentUser && pTg === myTg && myTg !== '';
+
+    let badgeHtml = '';
+    if (item.isVip) badgeHtml = '<div class="vip-badge">👑 VIP</div>';
+    else if (item.isHighlighted) badgeHtml = '<div class="top-badge">⚡ ТОП</div>';
+
+    card.innerHTML = `
+        ${badgeHtml}
+        <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
+        ${isMyProduct ? `<button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>` : ''}
+        <img class="product-image" src="${mainImage}" alt="${item.title}" loading="lazy">
+        <div class="product-title">${item.title}</div>
+        <div class="product-city">${item.city || 'Минск'}</div>
+        <div class="product-price">${item.price}</div>
+    `;
+    return card;
 }
 
 function compressImage(file, callback) {
