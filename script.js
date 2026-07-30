@@ -20,6 +20,58 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// === ЗВУКОВЫЕ ЭФФЕКТЫ ЧЕРЕЗ WEB AUDIO API ===
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+
+    if (type === 'click') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+    } else if (type === 'coin') {
+        // Звон монетки при продаже или награде
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(987.77, now); // B5
+        osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+    } else if (type === 'buy') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+    } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.setValueAtTime(100, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+    }
+}
+
 // === БАЗА ПОДКАТЕГОРИЙ И РАЗМЕРОВ ===
 const subcategoriesMap = {
     "Электроника": ["Телефоны", "Компьютеры и ноутбуки", "Умные часы", "Наушники", "Планшеты", "Игровые приставки", "Другая электроника"],
@@ -96,6 +148,7 @@ window.dismissKeyboard = function() {
 
 window.openEditProfileModal = function() {
     triggerHaptic('light');
+    playSound('click');
     if (!currentUser) return;
 
     const nameInput = document.getElementById('edit-name-input');
@@ -124,6 +177,7 @@ window.openEditProfileModal = function() {
 
 window.openFullscreenZoom = function() {
     triggerHaptic('light');
+    playSound('click');
     const currentImgSrc = currentProductImages[currentImageIndex];
     if (!currentImgSrc) return;
 
@@ -139,6 +193,7 @@ window.openFullscreenZoom = function() {
 
 window.closeFullscreenZoom = function() {
     triggerHaptic('light');
+    playSound('click');
     const zoomModal = document.getElementById('fullscreen-zoom-modal');
     if (zoomModal) {
         zoomModal.classList.add('hidden');
@@ -167,7 +222,6 @@ function updateZoomGalleryUI() {
     }
 }
 
-// === ПОДДЕРЖКА СВАЙПОВ ДЛЯ ФОТО В ЛАЙТБОКСЕ ===
 let touchStartX = 0;
 let touchEndX = 0;
 
@@ -177,6 +231,7 @@ function handleZoomSwipe() {
         if (currentImageIndex < currentProductImages.length - 1) {
             currentImageIndex++;
             triggerHaptic('selection');
+            playSound('click');
             updateGallery();
             updateZoomGalleryUI();
         }
@@ -185,6 +240,7 @@ function handleZoomSwipe() {
         if (currentImageIndex > 0) {
             currentImageIndex--;
             triggerHaptic('selection');
+            playSound('click');
             updateGallery();
             updateZoomGalleryUI();
         }
@@ -459,6 +515,7 @@ function checkPendingReviewRequests() {
                       await db.collection("pendingReviews").doc(doc.id).update({ completed: true });
 
                       triggerHaptic('success');
+                      playSound('coin');
                       reviewModal.classList.add('hidden');
                       alert('Спасибо за ваш отзыв!');
                   } catch (e) {
@@ -606,12 +663,14 @@ async function loginUser(name, username, photoUrl = '') {
     };
     favorites = JSON.parse(localStorage.getItem(`favs_${cleanUsername}`)) || [];
     triggerHaptic('success');
+    playSound('coin');
     saveToStorage();
     checkAuth();
 }
 
 function logoutUser() {
     triggerHaptic('warning');
+    playSound('error');
     currentUser = null;
     favorites = []; 
     saveToStorage();
@@ -624,6 +683,7 @@ async function completeVerification(phone) {
     currentUser.isVerified = true;
     currentUser.phone = phone;
     triggerHaptic('success');
+    playSound('coin');
     saveToStorage();
     renderProfile();
 
@@ -785,11 +845,13 @@ function setupViewModalCommon(product) {
 
 window.openPurchasedViewModal = function(product) {
     triggerHaptic('light');
+    playSound('click');
     setupViewModalCommon(product);
 };
 
 window.openViewModal = function(id) {
     triggerHaptic('light');
+    playSound('click');
     const product = products.find(p => p.id === id);
     if (!product) return;
     logProductView(id);
@@ -798,6 +860,7 @@ window.openViewModal = function(id) {
 
 function closeViewModal() {
     triggerHaptic('light');
+    playSound('click');
     document.getElementById('view-modal').classList.add('hidden');
     if (tg?.MainButton) {
         tg.MainButton.hide();
@@ -806,6 +869,7 @@ function closeViewModal() {
 
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
+    playSound('click');
     
     let targetTg = activeSellerData.telegram || '';
     window.currentOpenedSellerTg = targetTg;
@@ -1127,6 +1191,7 @@ window.toggleFavorite = async function(event, id) {
         favorites.push(id);
     }
     triggerHaptic('medium');
+    playSound('click');
     saveToStorage();
     filterAndRender();
     renderProfile();
@@ -1192,6 +1257,7 @@ async function loadRecentViewersForProduct(productId) {
                 chip.onclick = () => {
                     document.getElementById('buyer-username-input').value = username;
                     triggerHaptic('light');
+                    playSound('click');
                     document.querySelectorAll('.viewer-chip').forEach(c => c.style.borderColor = 'transparent');
                     chip.style.borderColor = '#007aff';
                     chip.style.borderWidth = '1.5px';
@@ -1222,6 +1288,7 @@ window.deleteProduct = function(event, id) {
 
     if (!currentUser || pTg !== myTg || !myTg) {
         triggerHaptic('error');
+        playSound('error');
         alert("Вы можете удалять только свои объявления!");
         return;
     }
@@ -1272,6 +1339,7 @@ async function finalizeProductDeletion(buyerUsername) {
         await db.collection("products").doc(pendingDeleteId).delete();
         favorites = favorites.filter(favId => favId !== pendingDeleteId);
         triggerHaptic('warning');
+        playSound('click');
         saveToStorage();
     } catch (err) {
         console.error("Ошибка удаления:", err);
@@ -1285,6 +1353,7 @@ window.handleTelegramClick = function(event, rawTg, productTitle, productPrice) 
     if (!rawTg) return;
 
     triggerHaptic('light');
+    playSound('click');
     let cleanTg = rawTg.trim().replace('@', '');
     let messageText = `Здравствуйте! Меня заинтересовал ваш товар "${productTitle}" за ${productPrice}.`;
     let encodedText = encodeURIComponent(messageText);
@@ -1330,6 +1399,7 @@ function updateGallery() {
 
 function openEditModal() {
     triggerHaptic('light');
+    playSound('click');
     const product = products.find(p => p.id === editingProductId);
     if (!product) return;
 
@@ -1374,6 +1444,7 @@ function openEditModal() {
 
 function openAddModal() {
     triggerHaptic('light');
+    playSound('click');
     editingProductId = null;
 
     document.getElementById('modal-title').textContent = 'Добавить объявление';
@@ -1404,7 +1475,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
 }
 
 function renderSearchTags() {
@@ -1604,7 +1675,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateResellerUI();
     spawnResellerLot();
 
-    // Запуск таймера обновления квестов каждую секунду
     setInterval(updateQuestsTimerUI, 1000);
 
     const buyBtn = document.getElementById('reseller-buy-btn');
@@ -1617,12 +1687,14 @@ document.addEventListener('DOMContentLoaded', () => {
             let maxSlots = resellerState.warehouseLevel === 3 ? 20 : (resellerState.warehouseLevel === 2 ? 12 : (resellerState.warehouseLevel === 1 ? 8 : 4));
             if (resellerState.inventory.length >= maxSlots) {
                 triggerHaptic('error');
+                playSound('error');
                 alert(`Склад заполнен! Максимум ${maxSlots} слотов. Продайте что-то со склада или улучшите склад.`);
                 return;
             }
 
             if (resellerState.balance < currentResellerLot.buyPrice) {
                 triggerHaptic('error');
+                playSound('error');
                 alert('Недостаточно средств на балансе!');
                 return;
             }
@@ -1636,12 +1708,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (userChoice === isActuallyLegit) {
                     triggerHaptic('success');
+                    playSound('coin');
                     alert(isActuallyLegit ? '✅ Вы угадали! Это 100% оригинал.' : '✅ Верно! Вы раскусили паленку и сэкономили деньги.');
                     if (!isActuallyLegit) {
                         currentResellerLot.buyPrice = Math.floor(currentResellerLot.buyPrice * 0.6);
                     }
                 } else {
                     triggerHaptic('error');
+                    playSound('error');
                     alert(isActuallyLegit ? '❌ Ошибка! Это оказался оригинал, вы упустили отличный лот.' : '❌ Ошибка! Вас обманули, это паленка! Товар потерял в стоимости.');
                     currentResellerLot.marketValue = Math.floor(currentResellerLot.buyPrice * 0.7);
                     currentResellerLot.fixedSellPrice = Math.floor(currentResellerLot.marketValue * 0.85);
@@ -1652,6 +1726,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resellerState.balance -= currentResellerLot.buyPrice;
             resellerState.inventory.push(currentResellerLot);
             triggerHaptic('success');
+            playSound('buy');
             saveResellerState();
             spawnResellerLot();
         };
@@ -1660,9 +1735,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (skipBtn) {
         skipBtn.onclick = () => {
             clearInterval(resellerTimerInterval);
-            // Учет в квестах: пропуск лота
-            checkDailyQuestProgress('skip', 1);
+            checkDailyQuestProgress('skip_3', 1);
             triggerHaptic('light');
+            playSound('click');
             spawnResellerLot();
         };
     }
@@ -1709,6 +1784,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closePublicProfileBtn && publicProfileModal) {
         closePublicProfileBtn.onclick = () => {
             triggerHaptic('light');
+            playSound('click');
             publicProfileModal.classList.add('hidden');
             window.currentOpenedSellerTg = null; 
             document.getElementById('view-modal').classList.remove('hidden');
@@ -1724,6 +1800,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pubTabAds.addEventListener('click', (e) => {
             e.preventDefault();
             triggerHaptic('selection');
+            playSound('click');
             pubTabAds.classList.add('active');
             pubTabReviews.classList.remove('active');
             
@@ -1734,6 +1811,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pubTabReviews.addEventListener('click', (e) => {
             e.preventDefault();
             triggerHaptic('selection');
+            playSound('click');
             pubTabReviews.classList.add('active');
             pubTabAds.classList.remove('active');
             
@@ -1755,6 +1833,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeEditProfileBtn) {
         closeEditProfileBtn.onclick = () => {
             triggerHaptic('light');
+            playSound('click');
             editProfileModal.classList.add('hidden');
         }
     }
@@ -1779,6 +1858,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!newName) {
                 triggerHaptic('error');
+                playSound('error');
                 alert('Имя не может быть пустым!');
                 return;
             }
@@ -1803,6 +1883,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderProfile();
                 
                 triggerHaptic('success');
+                playSound('coin');
                 editProfileModal.classList.add('hidden');
             } catch (e) {
                 console.error('Ошибка сохранения профиля', e);
@@ -1818,6 +1899,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeVerifyModalBtn) {
         closeVerifyModalBtn.onclick = () => {
             triggerHaptic('light');
+            playSound('click');
             document.getElementById('verify-modal').classList.add('hidden');
         };
     }
@@ -1825,6 +1907,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmTgPhoneBtn) {
         confirmTgPhoneBtn.onclick = () => {
             triggerHaptic('light');
+            playSound('click');
             if (tg?.requestContact) {
                 tg.requestContact((sent) => {
                     if (sent) {
@@ -1844,6 +1927,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const phoneVal = document.getElementById('manual-phone-input').value.trim();
             if (!phoneVal) {
                 triggerHaptic('error');
+                playSound('error');
                 alert('Введите ваш номер телефона!');
                 return;
             }
@@ -1869,6 +1953,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const username = document.getElementById('guest-tg-input').value.trim();
             if (!name) {
                 triggerHaptic('error');
+                playSound('error');
                 alert('Введите ваше имя!');
                 return;
             }
@@ -1969,6 +2054,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (openFiltersBtn && filtersModal) {
         openFiltersBtn.onclick = () => {
             triggerHaptic('light');
+            playSound('click');
             
             let fCity = currentFilters.city;
             if (fCity === 'all') {
@@ -2001,6 +2087,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (applyFiltersBtn && filtersModal) {
         applyFiltersBtn.onclick = () => {
             triggerHaptic('success');
+            playSound('click');
             
             let fCityVal = filterCitySelect.value;
             if (fCityVal === 'custom') {
@@ -2031,6 +2118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resetFiltersBtn && filtersModal) {
         resetFiltersBtn.onclick = () => {
             triggerHaptic('warning');
+            playSound('click');
             filterCitySelect.value = 'all';
             filterCustomCityInput.classList.add('hidden');
             filterCustomCityInput.value = '';
@@ -2080,6 +2168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pTabBtns.forEach(btn => {
         btn.onclick = () => {
             triggerHaptic('selection');
+            playSound('click');
             pTabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
@@ -2092,6 +2181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     navItems.forEach(item => {
         item.onclick = () => {
             triggerHaptic('selection');
+            playSound('click');
             navItems.forEach(n => n.classList.remove('active'));
             item.classList.add('active');
 
@@ -2118,6 +2208,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentImageIndex > 0) {
                 currentImageIndex--;
                 triggerHaptic('selection');
+                playSound('click');
                 updateGallery();
             }
         };
@@ -2128,6 +2219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentImageIndex < currentProductImages.length - 1) {
                 currentImageIndex++;
                 triggerHaptic('selection');
+                playSound('click');
                 updateGallery();
             }
         };
@@ -2137,6 +2229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         themeBtn.onclick = () => {
             isDarkTheme = !isDarkTheme;
             triggerHaptic('light');
+            playSound('click');
             applyTheme();
             saveToStorage();
         };
@@ -2145,6 +2238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     catBtns.forEach(btn => {
         btn.onclick = () => {
             triggerHaptic('selection');
+            playSound('click');
             catBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentCategory = btn.dataset.cat;
@@ -2164,7 +2258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (openBtn) openBtn.onclick = () => openAddModal();
-    if (closeBtn) closeBtn.onclick = () => { triggerHaptic('light'); modal.classList.add('hidden'); };
+    if (closeBtn) closeBtn.onclick = () => { triggerHaptic('light'); playSound('click'); modal.classList.add('hidden'); };
     if (editBtn) editBtn.onclick = () => openEditModal();
 
     if (saveBtn) {
@@ -2190,6 +2284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!titleInput.value.trim()) {
                 triggerHaptic('error');
+                playSound('error');
                 alert('Введите название товара!');
                 return;
             }
@@ -2198,6 +2293,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let finalPrice = `${rawPrice} ${currencySelect.value}`;
 
             triggerHaptic('success');
+            playSound('coin');
             modal.classList.add('hidden');
 
             const files = fileInput.files ? Array.from(fileInput.files).slice(0, 4) : [];
@@ -2261,6 +2357,7 @@ function handleZoomSwipe() {
         if (currentImageIndex < currentProductImages.length - 1) {
             currentImageIndex++;
             triggerHaptic('selection');
+            playSound('click');
             updateGallery();
             updateZoomGalleryUI();
         }
@@ -2269,6 +2366,7 @@ function handleZoomSwipe() {
         if (currentImageIndex > 0) {
             currentImageIndex--;
             triggerHaptic('selection');
+            playSound('click');
             updateGallery();
             updateZoomGalleryUI();
         }
@@ -2341,7 +2439,7 @@ function updateQuestsTimerUI() {
 
     let timerEl = document.getElementById('quests-timer-text');
     if (timerEl) {
-        timerEl.textContent = `Обновление через: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        timerEl.textContent = `Обновление: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 }
 
@@ -2373,7 +2471,7 @@ function renderWarehouseBar() {
     let title = resellerState.warehouseLevel === 3 ? '🏬 Мега-молл' : (resellerState.warehouseLevel === 2 ? '🏛️ Бутик' : (resellerState.warehouseLevel === 1 ? '🏢 Шоурум' : '🏠 Гараж'));
     let nextCost = resellerState.warehouseLevel === 0 ? 1000 : (resellerState.warehouseLevel === 1 ? 3000 : (resellerState.warehouseLevel === 2 ? 7500 : 0));
 
-    // Убран сброс: на максимуме просто горит значок "Максимум уровня"
+    // Убран сброс: на максимуме горит зеленый значок "Максимум уровня" без кнопок
     let upgradeBtnHtml = resellerState.warehouseLevel < 3 ? 
         `<button class="warehouse-upgrade-btn" onclick="upgradeWarehouse(${nextCost})">Улучшить за ${nextCost} BYN</button>` : 
         `<span style="font-size:12px; color:#34c759; font-weight:800; background:rgba(52,199,89,0.12); padding:6px 10px; border-radius:8px;">✓ Максимум</span>`;
@@ -2391,12 +2489,14 @@ function renderWarehouseBar() {
 window.upgradeWarehouse = function(cost) {
     if (resellerState.balance < cost) {
         triggerHaptic('error');
+        playSound('error');
         alert('Недостаточно средств для улучшения склада!');
         return;
     }
     resellerState.balance -= cost;
     resellerState.warehouseLevel++;
     triggerHaptic('success');
+    playSound('coin');
     saveResellerState();
     alert('Поздравляем! Склад успешно улучшен!');
 };
@@ -2420,7 +2520,7 @@ function renderAchievementsWidget() {
     const dailyQuestsList = [
         { id: 'sell_2', title: 'Быстрый старт', desc: 'Продайте 2 любых товара', target: 2, reward: 150 },
         { id: 'clean_1', title: 'Мастер чистоты', desc: 'Сделайте 1 химчистку товара', target: 1, reward: 100 },
-        { id: 'skip_3', title: 'Переборщищник', desc: 'Пропустите 3 невыгодных лота', target: 3, reward: 75 }
+        { id: 'skip_3', title: 'Переборщик', desc: 'Пропустите 3 невыгодных лота', target: 3, reward: 75 }
     ];
 
     let html = `
@@ -2467,6 +2567,7 @@ window.claimDailyQuest = function(questId, rewardAmount) {
     resellerState.dailyQuests.claimed.push(questId);
     resellerState.balance += rewardAmount;
     triggerHaptic('success');
+    playSound('coin');
     saveResellerState();
     alert(`🎉 Награда получена! +${rewardAmount} BYN зачислено на баланс.`);
 };
@@ -2534,12 +2635,14 @@ function spawnResellerLot() {
             let maxSlots = resellerState.warehouseLevel === 3 ? 20 : (resellerState.warehouseLevel === 2 ? 12 : (resellerState.warehouseLevel === 1 ? 8 : 4));
             if (resellerState.inventory.length >= maxSlots) {
                 triggerHaptic('error');
+                playSound('error');
                 alert(`Склад заполнен! Максимум ${maxSlots} слотов. Продайте что-то со склада или улучшите склад.`);
                 return;
             }
 
             if (resellerState.balance < currentResellerLot.buyPrice) {
                 triggerHaptic('error');
+                playSound('error');
                 alert('Недостаточно средств на балансе!');
                 return;
             }
@@ -2553,12 +2656,14 @@ function spawnResellerLot() {
                 
                 if (userChoice === isActuallyLegit) {
                     triggerHaptic('success');
+                    playSound('coin');
                     alert(isActuallyLegit ? '✅ Вы угадали! Это 100% оригинал.' : '✅ Верно! Вы раскусили паленку и сэкономили деньги.');
                     if (!isActuallyLegit) {
                         currentResellerLot.buyPrice = Math.floor(currentResellerLot.buyPrice * 0.6);
                     }
                 } else {
                     triggerHaptic('error');
+                    playSound('error');
                     alert(isActuallyLegit ? '❌ Ошибка! Это оказался оригинал, вы упустили отличный лот.' : '❌ Ошибка! Вас обманули, это паленка! Товар потерял в стоимости.');
                     currentResellerLot.marketValue = Math.floor(currentResellerLot.buyPrice * 0.7);
                     currentResellerLot.fixedSellPrice = Math.floor(currentResellerLot.marketValue * 0.85);
@@ -2569,6 +2674,7 @@ function spawnResellerLot() {
             resellerState.balance -= currentResellerLot.buyPrice;
             resellerState.inventory.push(currentResellerLot);
             triggerHaptic('success');
+            playSound('buy');
             saveResellerState();
             spawnResellerLot();
         };
@@ -2577,6 +2683,7 @@ function spawnResellerLot() {
             clearInterval(resellerTimerInterval);
             checkDailyQuestProgress('skip_3', 1);
             triggerHaptic('light');
+            playSound('click');
             spawnResellerLot();
         };
     }
@@ -2673,6 +2780,7 @@ function renderResellerInventory() {
 window.cleanResellerItem = function(index, cost) {
     if (resellerState.balance < cost) {
         triggerHaptic('error');
+        playSound('error');
         alert('Недостаточно средств для химчистки!');
         return;
     }
@@ -2683,10 +2791,10 @@ window.cleanResellerItem = function(index, cost) {
     item.buyPrice += cost; 
     item.fixedSellPrice = Math.floor(item.fixedSellPrice * 1.35); 
     
-    // Учет в квестах: химчистка
     checkDailyQuestProgress('clean_1', 1);
 
     triggerHaptic('success');
+    playSound('coin');
     saveResellerState();
     renderResellerInventory();
 };
@@ -2697,10 +2805,10 @@ window.sellResellerItem = function(index, sellPrice) {
     resellerState.balance += sellPrice;
     resellerState.dealsCount++;
     
-    // Учет в квестах: продажа товара
     checkDailyQuestProgress('sell_2', 1);
 
     triggerHaptic('success');
+    playSound('coin');
     saveResellerState();
     renderResellerInventory();
     spawnResellerLot();
