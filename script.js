@@ -254,6 +254,7 @@ function listenFirebasePurchases() {
       });
 }
 
+// Засчитываем просмотр только 1 раз для каждого уникального пользователя
 async function logProductView(productId) {
     if (!currentUser || !currentUser.username) return;
 
@@ -261,9 +262,13 @@ async function logProductView(productId) {
     if (!product) return;
     let pTg = (product.telegram || '').replace('@', '').toLowerCase();
     let myTg = (currentUser.username || '').toLowerCase();
-    if (pTg === myTg) return;
+    if (pTg === myTg) return; // Свои просмотры не считаем
 
     try {
+        // Проверяем, смотрел ли этот юзер этот товар ранее
+        const existingView = allProductViews.find(v => v.productId === productId && v.viewerUsername === currentUser.username);
+        if (existingView) return; // Уже смотрел, повторно не засчитываем
+
         await db.collection("productViews").add({
             productId: productId,
             viewerUsername: currentUser.username,
