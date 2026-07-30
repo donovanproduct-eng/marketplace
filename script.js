@@ -36,6 +36,7 @@ const shoeSizes = [
 ];
 
 const standardCities = ["Минск", "Гродно", "Брест", "Гомель", "Витебск", "Могилев"];
+let searchHistory = JSON.parse(localStorage.getItem('search_history')) || ['iPhone', 'Кроссовки', 'Худи'];
 
 function triggerHaptic(type = 'light') {
     if (!tg?.HapticFeedback) return;
@@ -358,6 +359,7 @@ function applyTheme() {
 function saveToStorage() {
     try {
         localStorage.setItem('my_marketplace_theme', isDarkTheme ? 'dark' : 'light');
+        localStorage.setItem('search_history', JSON.stringify(searchHistory));
         if (currentUser) {
             localStorage.setItem('my_marketplace_user', JSON.stringify(currentUser));
             localStorage.setItem(`favs_${currentUser.username}`, JSON.stringify(favorites));
@@ -1242,13 +1244,50 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('hidden');
+}
+
+// === РЕНДЕР ИСТОРИИ И ТЕГОВ ПОИСКА ===
+function renderSearchTags() {
+    const container = document.getElementById('search-tags-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (searchHistory.length === 0) return;
+
+    searchHistory.slice(-5).reverse().forEach(term => {
+        const tag = document.createElement('button');
+        tag.className = 'search-tag-chip';
+        tag.textContent = term;
+        tag.onclick = () => {
+            const searchInput = document.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.value = term;
+                filterAndRender();
+            }
+        };
+        container.appendChild(tag);
+    });
+}
+
+function addSearchHistory(query) {
+    if (!query || query.length < 2) return;
+    if (!searchHistory.includes(query)) {
+        searchHistory.push(query);
+        if (searchHistory.length > 10) searchHistory.shift();
+        saveToStorage();
+        renderSearchTags();
+    }
 }
 
 // === УМНАЯ ФИЛЬТРАЦИЯ И СОРТИРОВКА ===
 function filterAndRender() {
     const searchInput = document.querySelector('.search-input');
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    if (query.length >= 2) {
+        addSearchHistory(searchInput.value.trim());
+    }
 
     const filtered = products.filter(product => {
         const matchesQuery = product.title.toLowerCase().includes(query);
@@ -1262,7 +1301,7 @@ function filterAndRender() {
             matchesCat = product.category === currentCategory;
         }
 
-        // Фильтр по городу (учитываем кастомный ввод в фильтрах)
+        // Фильтр по городу
         let matchesCity = true;
         if (currentFilters.city !== 'all') {
             let pCity = (product.city || 'Минск').toLowerCase();
@@ -1406,6 +1445,7 @@ document.addEventListener('DOMContentLoaded', () => {
     listenFirebaseProducts();
     listenFirebaseReviews();
     listenFirebaseViews();
+    renderSearchTags();
 
     const closeVBtn = document.getElementById('close-view-btn');
     if (closeVBtn) {
@@ -1657,7 +1697,6 @@ document.addEventListener('DOMContentLoaded', () => {
         openFiltersBtn.onclick = () => {
             triggerHaptic('light');
             
-            // Заполняем поля модалки фильтров сохраненными значениями
             let fCity = currentFilters.city;
             if (fCity === 'all') {
                 filterCitySelect.value = 'all';
@@ -1688,7 +1727,6 @@ document.addEventListener('DOMContentLoaded', () => {
         applyFiltersBtn.onclick = () => {
             triggerHaptic('success');
             
-            // Считываем город из фильтров
             let fCityVal = filterCitySelect.value;
             if (fCityVal === 'custom') {
                 currentFilters.city = filterCustomCityInput.value.trim() || 'all';
