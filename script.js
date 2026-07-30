@@ -443,7 +443,6 @@ function setupViewModalCommon(product) {
 
     updateGallery();
 
-    // Склеиваем основную категорию и подкатегорию для красивого отображения
     let categoryText = product.category || 'Другое';
     if (product.subcategory) {
         categoryText += ` • ${product.subcategory}`;
@@ -525,7 +524,6 @@ function closeViewModal() {
     }
 }
 
-// Открытие профиля продавца
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
     
@@ -1006,7 +1004,6 @@ function openEditModal() {
     document.getElementById('currency-select').value = currPart;
 
     document.getElementById('category-select').value = product.category || 'Другое';
-    // Вызываем обновление подкатегорий и подставляем сохраненную (если есть)
     updateSubcategories(product.category || 'Другое', product.subcategory || '');
 
     document.getElementById('city-select').value = product.city || 'Минск';
@@ -1029,7 +1026,7 @@ function openAddModal() {
     document.getElementById('currency-select').value = 'BYN';
     
     document.getElementById('category-select').value = 'Другое';
-    updateSubcategories('Другое'); // Скрываем подкатегории по умолчанию
+    updateSubcategories('Другое'); 
 
     document.getElementById('city-select').value = 'Минск';
     
@@ -1316,7 +1313,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevImgBtn = document.getElementById('prev-img-btn');
     const nextImgBtn = document.getElementById('next-img-btn');
 
-    // СЛУШАТЕЛЬ ДЛЯ ВЫБОРА КАТЕГОРИИ
     const categorySelectEl = document.getElementById('category-select');
     if (categorySelectEl) {
         categorySelectEl.addEventListener('change', (e) => {
@@ -1353,6 +1349,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetTab = item.dataset.tab;
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
             document.getElementById(targetTab).classList.remove('hidden');
+
+            const addBtn = document.getElementById('open-modal-btn');
+            if (addBtn) {
+                if (targetTab === 'tab-my-ads') {
+                    addBtn.style.display = ''; 
+                } else {
+                    addBtn.style.display = 'none'; 
+                }
+            }
 
             if (targetTab === 'tab-profile') renderProfile();
             if (targetTab === 'tab-my-ads') renderMyProductsTab();
@@ -1422,7 +1427,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const currencySelect = document.getElementById('currency-select');
             const categorySelect = document.getElementById('category-select');
             
-            // Получаем подкатегорию, если блок открыт
             const subContainer = document.getElementById('subcategory-container');
             const subcategoryVal = subContainer.style.display === 'block' ? document.getElementById('subcategory-select').value : '';
 
@@ -1450,7 +1454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     title: titleInput.value.trim(),
                     price: finalPrice,
                     category: categorySelect.value,
-                    subcategory: subcategoryVal, // Сохраняем в БД
+                    subcategory: subcategoryVal,
                     city: citySelect.value,
                     seller: sellerInput.value.trim() || 'Частное лицо',
                     telegram: telegramInput.value.trim(),
