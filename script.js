@@ -2242,7 +2242,7 @@ function handleZoomSwipe() {
     }
 }
 
-// Новая точная база с твоими вещами для симулятора реселлера
+// Новая точная база с твоими вещами из чата
 const resellerTemplates = [
     { title: "Gucci Ski Goggles", img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300", minPrice: 200, maxPrice: 450, desc: "Оригинальные горнолыжные маски Gucci с фирменной лентой." },
     { title: "Supreme x Stone Island Shorts", img: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=300", minPrice: 150, maxPrice: 320, desc: "Коллаборация с патчем Stone Island. Состояние отличное." },
@@ -2311,12 +2311,6 @@ function spawnResellerLot() {
     if (descEl) descEl.textContent = currentResellerLot.desc;
     if (priceEl) priceEl.textContent = `${currentResellerLot.buyPrice} BYN`;
     if (marketEl) marketEl.textContent = `~${currentResellerLot.marketValue} BYN`;
-
-    // Заменим разметку кнопок на стильные в самом блоке лота, если нужно
-    const buttonsContainer = document.querySelector('#reseller-lot-card .reseller-card > div:last-child');
-    if (!buttonsContainer && document.getElementById('reseller-buy-btn') === null) {
-        // перестраховка структуры
-    }
 
     startResellerTimer(12);
 }
