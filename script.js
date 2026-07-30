@@ -473,12 +473,17 @@ async function syncUserWithFirebase() {
             
             if (data.bio) currentUser.bio = data.bio;
             if (data.customAvatar) currentUser.customAvatar = data.customAvatar;
+            if (data.photoUrl && !currentUser.photoUrl) currentUser.photoUrl = data.photoUrl;
             if (data.favorites) favorites = data.favorites;
             
             saveToStorage();
             renderProfile();
             filterAndRender();
         } else {
+            const user = tg?.initDataUnsafe?.user;
+            let tgPhoto = user?.photo_url || '';
+            currentUser.photoUrl = tgPhoto;
+
             await userDocRef.set({
                 name: currentUser.name,
                 username: currentUser.username,
@@ -486,6 +491,7 @@ async function syncUserWithFirebase() {
                 phone: '',
                 bio: '',
                 customAvatar: '',
+                photoUrl: tgPhoto,
                 favorites: favorites 
             });
         }
@@ -592,6 +598,31 @@ function setupViewModalCommon(product) {
     document.getElementById('view-city').textContent = product.city || 'Минск';
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
+    // Загружаем аватарку продавца в карточке товара
+    const sellerAvatarContainer = document.querySelector('.seller-card .seller-avatar');
+    if (sellerAvatarContainer) {
+        sellerAvatarContainer.innerHTML = '👤'; // заглушка по умолчанию
+    }
+
+    let rawTg = product.telegram ? String(product.telegram).trim() : '';
+    if (rawTg.includes('t.me/')) {
+        rawTg = rawTg.split('t.me/')[1].split('/')[0];
+    }
+    let cleanTg = rawTg.replace('@', '').trim();
+
+    if (cleanTg && sellerAvatarContainer) {
+        db.collection("users").doc(cleanTg.toLowerCase()).get().then(doc => {
+            if (doc.exists) {
+                const sData = doc.data();
+                if (sData.customAvatar) {
+                    sellerAvatarContainer.innerHTML = `<img src="${sData.customAvatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                } else if (sData.photoUrl) {
+                    sellerAvatarContainer.innerHTML = `<img src="${sData.photoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                }
+            }
+        }).catch(e => console.error("Ошибка загрузки аватарки продавца:", e));
+    }
+
     let totalLikes = 0;
     for (let i = 0; i < localStorage.length; i++) {
         let key = localStorage.key(i);
@@ -616,12 +647,6 @@ function setupViewModalCommon(product) {
         document.getElementById('view-title').insertAdjacentElement('beforebegin', existingLikesInfo);
     }
     existingLikesInfo.innerHTML = `❤️ В избранном: ${totalLikes} чел. &nbsp;&nbsp;|&nbsp;&nbsp; 👁️ Просмотров: ${totalViews}`;
-
-    let rawTg = product.telegram ? String(product.telegram).trim() : '';
-    if (rawTg.includes('t.me/')) {
-        rawTg = rawTg.split('t.me/')[1].split('/')[0];
-    }
-    let cleanTg = rawTg.replace('@', '').trim();
 
     let tgUser = cleanTg ? ('@' + cleanTg) : 'Telegram не указан';
     document.getElementById('view-telegram').textContent = tgUser;
@@ -728,8 +753,13 @@ window.openActiveSellerProfile = function() {
                     if (pubNameEl && data.name) pubNameEl.textContent = data.name;
 
                     if (pubAvEl) {
-                        if (data.customAvatar) pubAvEl.innerHTML = `<img src="${data.customAvatar}" alt="Avatar">`;
-                        else pubAvEl.innerHTML = '👤';
+                        if (data.customAvatar) {
+                            pubAvEl.innerHTML = `<img src="${data.customAvatar}" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">`;
+                        } else if (data.photoUrl) {
+                            pubAvEl.innerHTML = `<img src="${data.photoUrl}" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">`;
+                        } else {
+                            pubAvEl.innerHTML = '👤';
+                        }
                     }
 
                     if (pubBioEl) {
@@ -1709,7 +1739,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Сохраняем в историю ТОЛЬКО при нажатии Enter/Поиск
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = searchInput.value.trim();
