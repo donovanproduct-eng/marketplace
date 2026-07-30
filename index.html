@@ -98,7 +98,6 @@
                 
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 8px; width: 100%;">
                     <button id="open-verify-btn" class="btn-secondary" onclick="openVerifyModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">Верификация</button>
-                    <!-- Исправлен вызов функции на openEditProfileModal -->
                     <button id="open-edit-profile-btn" class="btn-secondary" onclick="openEditProfileModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">⚙️ Настройки</button>
                 </div>
 
@@ -178,6 +177,29 @@
             </select>
             <input type="text" id="filter-custom-city-input" placeholder="Введите название города..." class="auth-input hidden" style="margin-bottom: 12px;">
 
+            <!-- Фильтр по категории -->
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Категория</label>
+            <select id="filter-category-select" class="select-input" style="margin-bottom: 12px;">
+                <option value="all" selected>Все категории</option>
+                <option value="Электроника">📱 Электроника</option>
+                <option value="Одежда">👕 Одежда</option>
+                <option value="Обувь">👟 Обувь</option>
+                <option value="Аксессуары">🎒 Аксессуары</option>
+                <option value="Другое">📦 Другое</option>
+            </select>
+
+            <!-- Подкатегория (появляется для одежды, обуви и т.д.) -->
+            <div id="filter-subcategory-container" style="display: none; margin-bottom: 12px;">
+                <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Подкатегория</label>
+                <select id="filter-subcategory-select" class="select-input"></select>
+            </div>
+
+            <!-- Размер (появляется для одежды и обуви) -->
+            <div id="filter-size-container" style="display: none; margin-bottom: 12px;">
+                <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Размер</label>
+                <select id="filter-size-select" class="select-input"></select>
+            </div>
+
             <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Сортировка цены</label>
             <select id="filter-sort-select" class="select-input">
                 <option value="default">По умолчанию (сначала новые)</option>
@@ -195,9 +217,6 @@
                     <option value="₽">₽ (RUB)</option>
                 </select>
             </div>
-
-            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Размер</label>
-            <input type="text" id="filter-size-input" placeholder="Например: M, 41.5, XXL..." class="auth-input" style="margin-bottom: 12px;">
 
             <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Минимальный рейтинг продавца</label>
             <select id="filter-rating-select" class="select-input" style="margin-bottom: 20px;">
