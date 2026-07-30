@@ -1617,27 +1617,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             clearInterval(resellerTimerInterval);
             
-            // === РЕАЛИЗАЦИЯ 2 ПУНКТА: МИНИ-ИГРА ЛЕГИТ-ЧЕКА (ПРОВЕРКА НА ОРИГИНАЛ) ===
-            // 30% шанс наткнуться на проверку подлинности для дорогих вещей
             let isCheckTriggered = currentResellerLot.buyPrice > 100 && Math.random() < 0.35;
             
             if (isCheckTriggered) {
-                let isActuallyLegit = Math.random() > 0.4; // 60% шанс что оригинал, 40% что паленка
+                let isActuallyLegit = Math.random() > 0.4;
                 let userChoice = confirm(`⚠️ Внимание! Продавец подозрительный.\nПройти легит-чек (проверить на подлинность)?\n\nНажмите «OK», если считаете, что это ОРИГИНАЛ.\nНажмите «Отмена», если это ПАЛЕНКА.`);
                 
                 if (userChoice === isActuallyLegit) {
                     triggerHaptic('success');
                     alert(isActuallyLegit ? '✅ Вы угадали! Это 100% оригинал.' : '✅ Верно! Вы раскусили паленку и сэкономили деньги.');
                     if (!isActuallyLegit) {
-                        // Снижаем цену покупки, так как спаслись от паленки или купили со скидкой
                         currentResellerLot.buyPrice = Math.floor(currentResellerLot.buyPrice * 0.6);
                     }
                 } else {
                     triggerHaptic('error');
                     alert(isActuallyLegit ? '❌ Ошибка! Это оказался оригинал, вы упустили отличный лот.' : '❌ Ошибка! Вас обманули, это паленка! Товар потерял в стоимости.');
-                    // Паленка стоит сильно дешевле при продаже
                     currentResellerLot.marketValue = Math.floor(currentResellerLot.buyPrice * 0.7);
-                    currentResellerLot.title += ' [ПАЛЕНКА ⚠️]';
+                    currentResellerLot.isFake = true; // Отмечаем красивым бейджем вместо порчи названия
                 }
             }
 
@@ -2265,7 +2261,7 @@ function handleZoomSwipe() {
     }
 }
 
-// === СИМУЛЯТОР РЕСЕЛЛЕРА (БЕРЕТ ЛОТЫ ИЗ products И ПОДДЕРЖИВАЕТ ЛЕГИТ-ЧЕК) ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА С КРАСИВЫМ ОФОРМЛЕНИЕМ ПАЛЕНКИ И КРУГЛОЙ КНОПКОЙ ПРОДАЖИ ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
@@ -2315,7 +2311,8 @@ function spawnResellerLot() {
         img: randomProduct.images ? randomProduct.images[0] : 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300',
         desc: randomProduct.description || 'Реальный товар с маркетплейса.',
         buyPrice: buyPrice,
-        marketValue: marketValue
+        marketValue: marketValue,
+        isFake: false
     };
 
     if (!document.getElementById('reseller-lot-img')) {
@@ -2366,7 +2363,7 @@ function spawnResellerLot() {
                     triggerHaptic('error');
                     alert(isActuallyLegit ? '❌ Ошибка! Это оказался оригинал, вы упустили отличный лот.' : '❌ Ошибка! Вас обманули, это паленка! Товар потерял в стоимости.');
                     currentResellerLot.marketValue = Math.floor(currentResellerLot.buyPrice * 0.7);
-                    currentResellerLot.title += ' [ПАЛЕНКА ⚠️]';
+                    currentResellerLot.isFake = true; 
                 }
             }
 
@@ -2444,11 +2441,18 @@ function renderResellerInventory() {
         let profit = sellOffer - item.buyPrice;
         let profitColor = profit >= 0 ? '#34c759' : '#ff3b30';
 
+        // Если вещь паленка, добавляем красивый бэйдж вместо порчи названия
+        let fakeBadgeHtml = item.isFake ? `<div class="fake-badge">⚠️ ПАЛЕНКА</div>` : '';
+
         div.innerHTML = `
+            ${fakeBadgeHtml}
             <img class="reseller-item-img" src="${item.img}" alt="${item.title}">
-            <div style="font-weight: 700; font-size: 13px; margin-bottom: 2px;">${item.title}</div>
+            <div style="font-weight: 700; font-size: 13px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</div>
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">Покупка: ${item.buyPrice} BYN</div>
-            <button class="btn-primary" style="padding: 6px; font-size: 12px; border:none; outline:none;" onclick="sellResellerItem(${index}, ${sellOffer})">Продать за ${sellOffer} BYN <br><span style="font-size: 10px; color:${profitColor};">(${profit >= 0 ? '+' : ''}${profit} BYN)</span></button>
+            <button class="reseller-btn-sell" onclick="sellResellerItem(${index}, ${sellOffer})">
+                Продать за ${sellOffer} BYN<br>
+                <span style="font-size: 11px; color: ${profit >= 0 ? '#d4edda' : '#f8d7da'}; font-weight: 600;">(${profit >= 0 ? '+' : ''}${profit} BYN)</span>
+            </button>
         `;
         container.appendChild(div);
     });
