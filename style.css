@@ -45,6 +45,18 @@ body {
     padding: 16px;
 }
 
+/* Затемняющий фон при открытой клавиатуре для удобного скрытия */
+.keyboard-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1500;
+}
+
+.keyboard-overlay.hidden {
+    display: none !important;
+}
+
 .spinner-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -175,7 +187,7 @@ body {
 .search-row {
     display: flex;
     gap: 6px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .search-input {
@@ -187,6 +199,38 @@ body {
     color: var(--text-color);
     font-size: 14px;
     outline: none;
+}
+
+/* Стили для тегов истории/популярного поиска */
+.search-tags-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.search-tags-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.search-tag-chip {
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-tag-chip:hover {
+    border-color: #007aff;
+    color: #007aff;
 }
 
 .theme-btn {
@@ -658,7 +702,7 @@ body {
     display: flex; 
     gap: 6px; 
     margin-bottom: 8px; 
-    align-items: stretch; /* Растягивает оба элемента до одинаковой максимальной высоты */
+    align-items: stretch;
 }
 
 .view-category-badge {
@@ -675,6 +719,7 @@ body {
 }
 
 .view-city-badge {
+    flex: 0.4;
     display: flex;
     align-items: center; 
     justify-content: center;
@@ -682,9 +727,10 @@ body {
     font-weight: 700;
     color: #007aff;
     background: var(--btn-secondary-bg);
-    padding: 0 16px;
+    padding: 10px 16px;
     border-radius: 6px;
     white-space: nowrap;
+    text-align: center;
 }
 
 .view-price { font-size: 24px; font-weight: 800; color: #007aff; margin-bottom: 4px; }
