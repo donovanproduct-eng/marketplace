@@ -85,6 +85,14 @@ function hideLoader() {
     }
 }
 
+// Функция для скрытия клавиатуры
+window.dismissKeyboard = function() {
+    const searchInput = document.querySelector('.search-input');
+    const overlay = document.getElementById('keyboard-overlay');
+    if (searchInput) searchInput.blur();
+    if (overlay) overlay.classList.add('hidden');
+};
+
 window.openFullscreenZoom = function() {
     triggerHaptic('light');
     const currentImgSrc = currentProductImages[currentImageIndex];
@@ -1264,6 +1272,7 @@ function renderSearchTags() {
             if (searchInput) {
                 searchInput.value = term;
                 filterAndRender();
+                dismissKeyboard();
             }
         };
         container.appendChild(tag);
@@ -1651,11 +1660,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const themeBtn = document.getElementById('theme-toggle');
     const searchInput = document.querySelector('.search-input');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+    const keyboardOverlay = document.getElementById('keyboard-overlay');
     const catBtns = document.querySelectorAll('.cat-btn');
     const navItems = document.querySelectorAll('.nav-item');
     const pTabBtns = document.querySelectorAll('.p-tab-btn');
     
     const modal = document.getElementById('modal');
+
+    // Логика фокуса на поиске (показ оверлея и кнопки очистки)
+    if (searchInput) {
+        searchInput.addEventListener('focus', () => {
+            if (keyboardOverlay) keyboardOverlay.classList.remove('hidden');
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            filterAndRender();
+            if (clearSearchBtn) {
+                if (e.target.value.trim().length > 0) {
+                    clearSearchBtn.classList.remove('hidden');
+                } else {
+                    clearSearchBtn.classList.add('hidden');
+                }
+            }
+        });
+
+        // Скрытие клавиатуры при нажатии Enter/Search на мобильной клавиатуре
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                dismissKeyboard();
+            }
+        });
+    }
+
+    if (clearSearchBtn && searchInput) {
+        clearSearchBtn.onclick = () => {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            filterAndRender();
+            searchInput.focus();
+        };
+    }
 
     // Логика выбора города в форме товара
     const citySelect = document.getElementById('city-select');
@@ -1866,8 +1911,6 @@ document.addEventListener('DOMContentLoaded', () => {
             filterAndRender();
         };
     });
-
-    if (searchInput) searchInput.addEventListener('input', () => filterAndRender());
 
     if (fileInput) {
         fileInput.addEventListener('change', () => {
