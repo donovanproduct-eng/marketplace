@@ -848,7 +848,7 @@ body {
     padding: 12px 16px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .reseller-balance-val {
@@ -861,6 +861,45 @@ body {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-muted);
+}
+
+/* Плашка апгрейда склада */
+.warehouse-upgrade-bar {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.warehouse-info-title {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.warehouse-info-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.warehouse-upgrade-btn {
+    background: #007aff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.warehouse-upgrade-btn:active {
+    transform: scale(0.96);
 }
 
 .reseller-card {
@@ -1014,7 +1053,7 @@ body {
     transform: scale(0.96);
 }
 
-/* Бейджи в углах карточки */
+/* Красивые бэйджи в углах карточки */
 .fake-badge {
     position: absolute;
     top: 8px;
