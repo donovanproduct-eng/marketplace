@@ -45,7 +45,6 @@ body {
     padding: 16px;
 }
 
-/* Затемняющий фон при открытой клавиатуре для удобного скрытия */
 .keyboard-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -201,7 +200,6 @@ body {
     outline: none;
 }
 
-/* Стили для тегов истории/популярного поиска */
 .search-tags-bar {
     display: flex;
     gap: 6px;
@@ -351,7 +349,6 @@ body {
     color: #007aff;
 }
 
-/* ПРОФИЛЬ */
 .profile-card {
     background: var(--card-bg);
     border-radius: 16px;
@@ -556,7 +553,6 @@ body {
 .nav-icon { font-size: 20px; margin-bottom: 2px; }
 .nav-item.active { color: #007aff; }
 
-/* Кнопка добавления (+) */
 .add-btn {
     position: fixed;
     bottom: 75px;
@@ -814,7 +810,6 @@ body {
     padding: 4px;
 }
 
-/* Полноэкранный просмотр фото (Лайтбокс) */
 #fullscreen-zoom-modal {
     position: fixed;
     top: 0;
@@ -839,7 +834,6 @@ body {
     border-radius: 8px;
 }
 
-/* СТИЛИ СИМУЛЯТОРА РЕСЕЛЛЕРА */
 .reseller-header {
     display: flex;
     justify-content: space-between;
@@ -863,7 +857,6 @@ body {
     color: var(--text-muted);
 }
 
-/* Плашка апгрейда склада */
 .warehouse-upgrade-bar {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -949,7 +942,6 @@ body {
     color: #007aff;
 }
 
-/* Кнопки реселлера (круглые, объемные) */
 .reseller-btn-skip {
     flex: 1;
     padding: 12px;
@@ -1012,7 +1004,6 @@ body {
     margin-bottom: 6px;
 }
 
-/* Стильная кнопка продажи на складе */
 .reseller-btn-sell {
     width: 100%;
     padding: 10px 8px;
@@ -1034,7 +1025,6 @@ body {
     box-shadow: 0 2px 5px rgba(52, 199, 89, 0.2);
 }
 
-/* Кнопка химчистки/ремонта на складе */
 .reseller-btn-clean {
     width: 100%;
     padding: 8px;
@@ -1053,7 +1043,6 @@ body {
     transform: scale(0.96);
 }
 
-/* Красивые бэйджи в углах карточки */
 .fake-badge {
     position: absolute;
     top: 8px;
