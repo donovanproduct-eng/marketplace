@@ -552,6 +552,8 @@ function renderReviews() {
     const myTg = currentUser.username.replace('@', '').toLowerCase();
     const myReviews = allReviews.filter(r => (r.sellerTelegram || '').toLowerCase() === myTg);
 
+    document.getElementById('profile-reviews-count').textContent = `(${myReviews.length} отзывов)`;
+
     if (myReviews.length === 0) {
         list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 10px;">Пока нет отзывов</div>';
         return;
