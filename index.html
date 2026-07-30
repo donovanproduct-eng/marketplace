@@ -294,16 +294,17 @@
                 </div>
             </div>
 
+            <!-- Обратите внимание, здесь убраны onclick атрибуты -->
             <div class="profile-tabs-bar">
-                <button id="pub-tab-ads" class="p-tab-btn active" onclick="switchPublicTab('ads')">Товары</button>
-                <button id="pub-tab-reviews" class="p-tab-btn" onclick="switchPublicTab('reviews')">Отзывы</button>
+                <button id="pub-tab-ads" class="p-tab-btn active">Товары</button>
+                <button id="pub-tab-reviews" class="p-tab-btn">Отзывы</button>
             </div>
 
             <div id="pub-sec-ads" class="profile-section">
                 <div id="public-user-products" class="products-grid"></div>
             </div>
 
-            <div id="pub-sec-reviews" class="profile-section hidden">
+            <div id="pub-sec-reviews" class="profile-section" style="display: none;">
                 <div id="public-reviews-list" class="reviews-list"></div>
             </div>
         </div>
@@ -355,31 +356,6 @@
             let homeNav = document.querySelector('.nav-item[data-tab="tab-home"]');
             if (homeNav) {
                 homeNav.click();
-            }
-        }
-
-        function switchPublicTab(tabName) {
-            const pubTabAds = document.getElementById('pub-tab-ads');
-            const pubTabReviews = document.getElementById('pub-tab-reviews');
-            const pubSecAds = document.getElementById('pub-sec-ads');
-            const pubSecReviews = document.getElementById('pub-sec-reviews');
-
-            if (tabName === 'ads') {
-                pubTabAds.classList.add('active');
-                pubTabReviews.classList.remove('active');
-                pubSecAds.classList.remove('hidden');
-                pubSecReviews.classList.add('hidden');
-                if (window.currentOpenedSellerTg) {
-                    renderPublicProfileProducts(window.currentOpenedSellerTg);
-                }
-            } else {
-                pubTabReviews.classList.add('active');
-                pubTabAds.classList.remove('active');
-                pubSecReviews.classList.remove('hidden');
-                pubSecAds.classList.add('hidden');
-                if (window.currentOpenedSellerTg) {
-                    renderPublicProfileReviews(window.currentOpenedSellerTg);
-                }
             }
         }
     </script>
