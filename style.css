@@ -658,7 +658,7 @@ body {
     display: flex; 
     gap: 6px; 
     margin-bottom: 8px; 
-    align-items: center; /* Центрируем блоки по вертикали */
+    align-items: stretch; /* Растягивает оба элемента до одинаковой максимальной высоты */
 }
 
 .view-category-badge {
@@ -682,9 +682,7 @@ body {
     font-weight: 700;
     color: #007aff;
     background: var(--btn-secondary-bg);
-    padding: 0 16px; /* Фиксированные отступы по бокам */
-    height: 100%; /* Растягиваем на полную высоту родителя (.view-badges) */
-    min-height: 38px; /* Согласуем минимальную высоту с левым блоком */
+    padding: 0 16px;
     border-radius: 6px;
     white-space: nowrap;
 }
