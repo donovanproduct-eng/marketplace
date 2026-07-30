@@ -91,9 +91,17 @@
                 <div id="user-avatar" class="profile-avatar">👤</div>
                 <h2 id="user-name" class="profile-name">Имя Пользователя</h2>
                 <div id="user-tg-tag" class="profile-username">@username</div>
+                
+                <!-- Описание О себе -->
+                <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; display: none;"></p>
 
                 <div id="profile-badge" class="profile-badge unverified">❌ Профиль не подтвержден</div>
-                <button id="open-verify-btn" class="verify-action-btn">Подтвердить профиль</button>
+                
+                <!-- Кнопки управления профилем -->
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="open-verify-btn" class="btn-secondary" style="flex: 1; font-size: 13px;">Верефикация</button>
+                    <button id="open-edit-profile-btn" class="btn-secondary" style="flex: 1; font-size: 13px;">⚙️ Настройки</button>
+                </div>
 
                 <div class="rating-box">
                     <span id="profile-rating-score" class="rating-score">0.0</span>
@@ -123,7 +131,6 @@
                 <div id="my-products" class="products-grid"></div>
             </div>
 
-            <!-- Секция: Мои покупки -->
             <div id="sec-purchases" class="profile-section hidden">
                 <div id="my-purchases-grid" class="products-grid"></div>
             </div>
@@ -151,8 +158,28 @@
             </button>
         </nav>
 
-        <!-- Кнопка добавлена со стилем display: none, чтобы изначально быть скрытой -->
         <button id="open-modal-btn" class="add-btn" style="display: none;">+</button>
+    </div>
+
+    <!-- Модалка: Редактирование профиля -->
+    <div id="edit-profile-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; margin-bottom: 15px;">Настройки профиля</h2>
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+                <div id="edit-avatar-preview" class="profile-avatar" style="margin: 0 auto 10px auto; width: 64px; height: 64px; font-size: 32px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f0f0f0;">👤</div>
+                <label class="btn-secondary" for="avatar-file-input" style="display: inline-block; padding: 8px 12px; font-size: 13px; cursor: pointer;">📸 Изменить фото</label>
+                <input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
+            </div>
+
+            <input type="text" id="edit-name-input" placeholder="Ваше имя" class="auth-input" style="margin-bottom: 10px;">
+            <textarea id="edit-bio-input" placeholder="Расскажите о себе (например: продаю только оригинальные вещи)..." rows="3" class="auth-input" style="margin-bottom: 15px; resize: none;"></textarea>
+
+            <div class="modal-buttons" style="display: flex; gap: 10px;">
+                <button id="close-edit-profile-btn" class="btn-secondary" style="flex:1;">Отмена</button>
+                <button id="save-profile-btn" class="btn-primary" style="flex:1;">Сохранить</button>
+            </div>
+        </div>
     </div>
 
     <!-- Модалка: Выбор покупателя из списка просмотров при удалении -->
@@ -220,11 +247,8 @@
                 <option value="Другое" selected>📦 Другое</option>
             </select>
 
-            <!-- НОВЫЙ БЛОК: Выбор подкатегории (по умолчанию скрыт) -->
             <div id="subcategory-container" style="display: none; margin-bottom: 12px;">
-                <select id="subcategory-select" class="select-input">
-                    <!-- Заполняется через JS в зависимости от категории -->
-                </select>
+                <select id="subcategory-select" class="select-input"></select>
             </div>
 
             <select id="city-select" class="select-input">
@@ -297,9 +321,12 @@
             <button id="close-public-profile-btn" class="close-view-btn">✕</button>
 
             <div class="profile-card">
-                <div class="profile-avatar">👤</div>
+                <div id="public-user-avatar" class="profile-avatar">👤</div>
                 <h2 id="public-user-name" class="profile-name">Продавец</h2>
                 <div id="public-user-tg" class="profile-username">@username</div>
+                
+                <!-- Описание О себе в чужом профиле -->
+                <p id="public-profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; display: none;"></p>
                 
                 <div id="public-profile-badge" class="profile-badge unverified">⏳ Проверка...</div>
 
