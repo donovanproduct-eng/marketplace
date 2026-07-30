@@ -2222,18 +2222,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Симулятор реселлера логика
+function handleZoomSwipe() {
+    const swipeThreshold = 50;
+    if (touchEndX < touchStartX - swipeThreshold) {
+        if (currentImageIndex < currentProductImages.length - 1) {
+            currentImageIndex++;
+            triggerHaptic('selection');
+            updateGallery();
+            updateZoomGalleryUI();
+        }
+    }
+    if (touchEndX > touchStartX + swipeThreshold) {
+        if (currentImageIndex > 0) {
+            currentImageIndex--;
+            triggerHaptic('selection');
+            updateGallery();
+            updateZoomGalleryUI();
+        }
+    }
+}
+
+// Новая точная база с твоими вещами для симулятора реселлера
 const resellerTemplates = [
-    { title: "Stone Island Zip Hoodie", img: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300", minPrice: 120, maxPrice: 280, desc: "Состояние 9/10, бирки на месте. Продавец срочно отдает." },
-    { title: "Nike Air Force 1 Low", img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300", minPrice: 80, maxPrice: 180, desc: "Немного б/у, но подошва в отличном состоянии." },
-    { title: "Rick Owens Ramones", img: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?w=300", minPrice: 250, maxPrice: 600, desc: "Редкая пара, есть небольшая потертость на носке." },
-    { title: "Carhartt WIP Jacket", img: "https://images.unsplash.com/photo-1548883354-7622d03aca27?w=300", minPrice: 100, maxPrice: 220, desc: "Винтажная рабочая куртка, плотный хлопок." },
-    { title: "Adidas Samba OG", img: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=300", minPrice: 90, maxPrice: 190, desc: "Классика, состояние идеальное, коробка есть." },
-    { title: "Supreme Box Logo Tee", img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300", minPrice: 150, maxPrice: 350, desc: "Лимитка с коллаборации, без следов носки." }
+    { title: "Gucci Ski Goggles", img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300", minPrice: 200, maxPrice: 450, desc: "Оригинальные горнолыжные маски Gucci с фирменной лентой." },
+    { title: "Supreme x Stone Island Shorts", img: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=300", minPrice: 150, maxPrice: 320, desc: "Коллаборация с патчем Stone Island. Состояние отличное." },
+    { title: "BAPE STA Mid Blue", img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300", minPrice: 300, maxPrice: 750, desc: "Яркие синие кроссовки в полном комплекте." },
+    { title: "Supreme x Stone Island Hoodie", img: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300", minPrice: 250, maxPrice: 550, desc: "Легендарное худи с принтом и патчем на рукаве." },
+    { title: "Versace Medusa Biggie Belt", img: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300", minPrice: 280, maxPrice: 650, desc: "Массивный синий ремень с головой Медузы." },
+    { title: "Gosha Rubchinskiy x Fila Tee", img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300", minPrice: 80, maxPrice: 200, desc: "Коллаб с кириллической надписью. Винтаж." },
+    { title: "Reebok Pump Fury x Vetements", img: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?w=300", minPrice: 400, maxPrice: 950, desc: "Экспериментальная модель с системой Pump." },
+    { title: "Palm Angels Track Shorts", img: "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=300", minPrice: 120, maxPrice: 280, desc: "Спортивные шорты с лампасами и готическим принтом." },
+    { title: "Nike x Sacai LDWaffle", img: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=300", minPrice: 300, maxPrice: 700, desc: "Двойной дизайн и подошва. Отличный лук." },
+    { title: "Gucci Spray Print Shorts", img: "https://images.unsplash.com/photo-1516257984-b1b4d707412e?w=300", minPrice: 180, maxPrice: 400, desc: "Шорты с граффити-принтом Gucci." }
 ];
 
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
-    balance: 400,
+    balance: 500,
     dealsCount: 0,
     inventory: []
 };
@@ -2264,8 +2288,8 @@ function spawnResellerLot() {
 
     const template = resellerTemplates[Math.floor(Math.random() * resellerTemplates.length)];
     const buyPrice = Math.floor(Math.random() * (template.maxPrice - template.minPrice) + template.minPrice);
-    const marketMultiplier = (Math.random() * 0.8 + 0.7);
-    const marketValue = Math.floor(buyPrice * marketMultiplier + (Math.random() * 60 - 20));
+    const marketMultiplier = (Math.random() * 0.8 + 0.75);
+    const marketValue = Math.floor(buyPrice * marketMultiplier + (Math.random() * 50 - 20));
 
     currentResellerLot = {
         id: Date.now(),
@@ -2273,7 +2297,7 @@ function spawnResellerLot() {
         img: template.img,
         desc: template.desc,
         buyPrice: buyPrice,
-        marketValue: Math.max(40, marketValue)
+        marketValue: Math.max(50, marketValue)
     };
 
     const imgEl = document.getElementById('reseller-lot-img');
@@ -2288,7 +2312,13 @@ function spawnResellerLot() {
     if (priceEl) priceEl.textContent = `${currentResellerLot.buyPrice} BYN`;
     if (marketEl) marketEl.textContent = `~${currentResellerLot.marketValue} BYN`;
 
-    startResellerTimer(10);
+    // Заменим разметку кнопок на стильные в самом блоке лота, если нужно
+    const buttonsContainer = document.querySelector('#reseller-lot-card .reseller-card > div:last-child');
+    if (!buttonsContainer && document.getElementById('reseller-buy-btn') === null) {
+        // перестраховка структуры
+    }
+
+    startResellerTimer(12);
 }
 
 function startResellerTimer(seconds) {
@@ -2313,7 +2343,7 @@ function startResellerTimer(seconds) {
 }
 
 window.resetResellerGame = function() {
-    resellerState = { balance: 400, dealsCount: 0, inventory: [] };
+    resellerState = { balance: 500, dealsCount: 0, inventory: [] };
     saveResellerState();
     location.reload();
 };
