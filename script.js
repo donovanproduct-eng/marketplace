@@ -92,6 +92,35 @@ window.dismissKeyboard = function() {
     if (overlay) overlay.classList.add('hidden');
 };
 
+// Открытие модального окна настроек профиля
+window.openEditProfileModal = function() {
+    triggerHaptic('light');
+    if (!currentUser) return;
+
+    const nameInput = document.getElementById('edit-name-input');
+    const bioInput = document.getElementById('edit-bio-input');
+    const avatarPreview = document.getElementById('edit-avatar-preview');
+
+    if (nameInput) nameInput.value = currentUser.name || '';
+    if (bioInput) bioInput.value = currentUser.bio || '';
+    
+    if (avatarPreview) {
+        if (currentUser.customAvatar) {
+            avatarPreview.innerHTML = `<img src="${currentUser.customAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
+        } else if (currentUser.photoUrl) {
+            avatarPreview.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+        } else {
+            avatarPreview.innerHTML = '👤';
+        }
+    }
+
+    tempAvatarBase64 = null;
+    const editProfileModal = document.getElementById('edit-profile-modal');
+    if (editProfileModal) {
+        editProfileModal.classList.remove('hidden');
+    }
+};
+
 window.openFullscreenZoom = function() {
     triggerHaptic('light');
     const currentImgSrc = currentProductImages[currentImageIndex];
@@ -1254,7 +1283,7 @@ function openAddModal() {
     document.getElementById('modal').classList.remove('hidden');
 }
 
-// === РЕНДЕР ИСТОРИИ ПОИСКА (СОХРАНЯЕМ ТОЛЬКО ПО ENTER ИЛИ КЛИКУ) ===
+// === РЕНДЕР ИСТОРИИ ПОИСКА ===
 function renderSearchTags() {
     const container = document.getElementById('search-tags-container');
     if (!container) return;
