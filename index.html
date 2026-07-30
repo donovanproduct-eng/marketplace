@@ -306,14 +306,18 @@
                 <select id="size-select" class="select-input"></select>
             </div>
 
-            <select id="city-select" class="select-input">
+            <!-- Выбор города + поле для своего города -->
+            <select id="city-select" class="select-input" style="margin-bottom: 8px;">
                 <option value="Минск" selected>Минск</option>
                 <option value="Гродно">Гродно</option>
                 <option value="Брест">Брест</option>
                 <option value="Гомель">Гомель</option>
                 <option value="Витебск">Витебск</option>
                 <option value="Могилев">Могилев</option>
+                <option value="custom">✍️ Другой город (вписать)</option>
             </select>
+
+            <input type="text" id="custom-city-input" placeholder="Введите ваш город или область..." class="auth-input hidden" style="margin-bottom: 12px;">
 
             <input type="text" id="seller-input" placeholder="Имя продавца">
             <input type="text" id="telegram-input" placeholder="Telegram (например: @username)">
@@ -344,7 +348,6 @@
 
             <div class="view-badges">
                 <span id="view-category" class="view-category-badge">Другое</span>
-                <!-- Убран значок булавки, остался чистый класс -->
                 <span id="view-city" class="view-city-badge">Минск</span>
             </div>
 
