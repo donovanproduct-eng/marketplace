@@ -134,6 +134,7 @@ window.openFullscreenZoom = function() {
     if (zoomImg && zoomModal) {
         zoomImg.src = currentImgSrc;
         zoomModal.classList.remove('hidden');
+        updateZoomGalleryUI();
     }
 };
 
@@ -142,6 +143,55 @@ window.closeFullscreenZoom = function() {
     const zoomModal = document.getElementById('fullscreen-zoom-modal');
     if (zoomModal) {
         zoomModal.classList.add('hidden');
+    }
+};
+
+// Листем фото внутри полноэкранного зума
+function updateZoomGalleryUI() {
+    const zoomImg = document.getElementById('fullscreen-zoom-img');
+    const dotsContainer = document.getElementById('zoom-dots');
+    const prevBtn = document.getElementById('zoom-prev-btn');
+    const nextBtn = document.getElementById('zoom-next-btn');
+
+    if (!currentProductImages || currentProductImages.length === 0) return;
+
+    zoomImg.src = currentProductImages[currentImageIndex];
+
+    if (currentProductImages.length <= 1) {
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (dotsContainer) dotsContainer.style.display = 'none';
+    } else {
+        if (prevBtn) prevBtn.style.display = 'flex';
+        if (nextBtn) nextBtn.style.display = 'flex';
+        if (dotsContainer) dotsContainer.style.display = 'flex';
+
+        if (dotsContainer) {
+            dotsContainer.innerHTML = '';
+            currentProductImages.forEach((_, idx) => {
+                const dot = document.createElement('div');
+                dot.className = `dot ${idx === currentImageIndex ? 'active' : ''}`;
+                dotsContainer.appendChild(dot);
+            });
+        }
+    }
+}
+
+window.zoomPrevImage = function() {
+    if (currentImageIndex > 0) {
+        currentImageIndex--;
+        triggerHaptic('selection');
+        updateGallery();
+        updateZoomGalleryUI();
+    }
+};
+
+window.zoomNextImage = function() {
+    if (currentImageIndex < currentProductImages.length - 1) {
+        currentImageIndex++;
+        triggerHaptic('selection');
+        updateGallery();
+        updateZoomGalleryUI();
     }
 };
 
@@ -222,7 +272,6 @@ function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSi
     }
 }
 
-// Обновление подкатегорий и размеров для модалки фильтров
 function updateFilterSubcategories(categoryValue, selectedSub = 'all', selectedSz = 'all') {
     const subContainer = document.getElementById('filter-subcategory-container');
     const subSelect = document.getElementById('filter-subcategory-select');
@@ -1266,20 +1315,22 @@ function updateGallery() {
     imgElement.src = currentProductImages[currentImageIndex];
 
     if (currentProductImages.length <= 1) {
-        prevBtn.style.display = 'none';
-        nextBtn.style.display = 'none';
-        dotsContainer.style.display = 'none';
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (dotsContainer) dotsContainer.style.display = 'none';
     } else {
-        prevBtn.style.display = 'flex';
-        nextBtn.style.display = 'flex';
-        dotsContainer.style.display = 'flex';
+        if (prevBtn) prevBtn.style.display = 'flex';
+        if (nextBtn) nextBtn.style.display = 'flex';
+        if (dotsContainer) dotsContainer.style.display = 'flex';
 
-        dotsContainer.innerHTML = '';
-        currentProductImages.forEach((_, idx) => {
-            const dot = document.createElement('div');
-            dot.className = `dot ${idx === currentImageIndex ? 'active' : ''}`;
-            dotsContainer.appendChild(dot);
-        });
+        if (dotsContainer) {
+            dotsContainer.innerHTML = '';
+            currentProductImages.forEach((_, idx) => {
+                const dot = document.createElement('div');
+                dot.className = `dot ${idx === currentImageIndex ? 'active' : ''}`;
+                dotsContainer.appendChild(dot);
+            });
+        }
     }
 }
 
