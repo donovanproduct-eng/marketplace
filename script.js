@@ -55,7 +55,6 @@ let favorites = currentUser ? (JSON.parse(localStorage.getItem(`favs_${currentUs
 
 let currentCategory = 'all';
 
-// Состояние расширенных фильтров
 let currentFilters = {
     city: 'all',
     sort: 'default',
@@ -365,6 +364,13 @@ function checkAuth() {
         filterAndRender();
         listenFirebasePurchases();
         checkPendingReviewRequests();
+
+        // Проверяем текущую активную вкладку и показываем кнопку плюс, если мы на вкладке «Мои товары»
+        const activeNav = document.querySelector('.nav-item.active');
+        const addBtn = document.getElementById('open-modal-btn');
+        if (activeNav && activeNav.dataset.tab === 'tab-my-ads' && addBtn) {
+            addBtn.style.display = '';
+        }
     } else {
         authScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
@@ -1732,7 +1738,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const files = fileInput.files ? Array.from(fileInput.files).slice(0, 4) : [];
 
-            const applyChangesWithImages = async (imagesArray) => {
+            const applyChangesWithIssues = async (imagesArray) => {
                 const productData = {
                     title: titleInput.value.trim(),
                     price: finalPrice,
@@ -1774,12 +1780,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (compressedUrl) processedImages.push(compressedUrl);
                         counter++;
                         if (counter === files.length) {
-                            applyChangesWithImages(processedImages);
+                            applyChangesWithIssues(processedImages);
                         }
                     });
                 });
             } else {
-                applyChangesWithImages([]);
+                applyChangesWithIssues([]);
             }
         };
     }
