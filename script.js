@@ -2270,14 +2270,16 @@ function handleZoomSwipe() {
     }
 }
 
-// === СИМУЛЯТОР РЕСЕЛЛЕРА + СИСТЕМА УЛУЧШЕНИЯ СКЛАДА ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА (МАКСИМАЛЬНЫЙ УРОВЕНЬ СКЛАДА БЕЗ СБРОСА + ПАНЕЛЬ ДОСТИЖЕНИЙ) ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
     inventory: [],
-    warehouseLevel: 0 
+    warehouseLevel: 0,
+    claimedAchievements: [] // Сохраненные награды за квесты
 };
 if (resellerState.warehouseLevel === undefined) resellerState.warehouseLevel = 0;
+if (!resellerState.claimedAchievements) resellerState.claimedAchievements = [];
 
 let currentResellerLot = null;
 let resellerTimerInterval = null;
@@ -2294,6 +2296,7 @@ function updateResellerUI() {
     if (dealsEl) dealsEl.textContent = resellerState.dealsCount;
 
     renderWarehouseBar();
+    renderAchievementsWidget();
     renderResellerInventory();
 }
 
@@ -2314,15 +2317,16 @@ function renderWarehouseBar() {
     let title = resellerState.warehouseLevel === 3 ? '🏬 Мега-молл' : (resellerState.warehouseLevel === 2 ? '🏛️ Бутик' : (resellerState.warehouseLevel === 1 ? '🏢 Шоурум' : '🏠 Гараж'));
     let nextCost = resellerState.warehouseLevel === 0 ? 1000 : (resellerState.warehouseLevel === 1 ? 3000 : (resellerState.warehouseLevel === 2 ? 7500 : 0));
 
+    // Если склад максимальный (Мега-молл), показываем красивый значок "Максимум" без кнопки сброса
     let upgradeBtnHtml = resellerState.warehouseLevel < 3 ? 
         `<button class="warehouse-upgrade-btn" onclick="upgradeWarehouse(${nextCost})">Улучшить за ${nextCost} BYN</button>` : 
-        `<button class="warehouse-upgrade-btn" style="background:#ff3b30;" onclick="resetWarehouseLevel()">Сбросить склад</button>`;
+        `<span style="font-size:12px; color:#34c759; font-weight:800; background:rgba(52,199,89,0.12); padding:6px 10px; border-radius:8px;">✓ Максимум</span>`;
 
     barContainer.className = 'warehouse-upgrade-bar';
     barContainer.innerHTML = `
         <div>
             <div class="warehouse-info-title">${title} (${resellerState.inventory.length}/${maxSlots} мест)</div>
-            <div class="warehouse-info-subtitle">${resellerState.warehouseLevel === 0 ? 'След: Шоурум (8 мест)' : (resellerState.warehouseLevel === 1 ? 'След: Бутик (12 мест)' : (resellerState.warehouseLevel === 2 ? 'След: Мега-молл (20 мест)' : 'Максимальный уровень'))}</div>
+            <div class="warehouse-info-subtitle">${resellerState.warehouseLevel === 0 ? 'След: Шоурум (8 мест)' : (resellerState.warehouseLevel === 1 ? 'След: Бутик (12 мест)' : (resellerState.warehouseLevel === 2 ? 'След: Мега-молл (20 мест)' : 'Высший уровень склада'))}</div>
         </div>
         ${upgradeBtnHtml}
     `;
@@ -2341,11 +2345,74 @@ window.upgradeWarehouse = function(cost) {
     alert('Поздравляем! Склад успешно улучшен!');
 };
 
-window.resetWarehouseLevel = function() {
-    resellerState.warehouseLevel = 0;
-    triggerHaptic('warning');
+// === ПАНЕЛЬ ДОСТИЖЕНИЙ (КВЕСТОВ) ===
+function renderAchievementsWidget() {
+    let achContainer = document.getElementById('achievements-widget');
+    if (!achContainer) {
+        const warehouseWidget = document.getElementById('warehouse-upgrade-widget');
+        if (warehouseWidget) {
+            achContainer = document.createElement('div');
+            achContainer.id = 'achievements-widget';
+            achContainer.style.margin = '12px 0';
+            warehouseWidget.insertAdjacentElement('afterend', achContainer);
+        }
+    }
+
+    if (!achContainer) return;
+
+    // Список квестов
+    const achievementsList = [
+        { id: 'deal_1', title: 'Первая сделка', desc: 'Совершите 1 успешную продажу', target: 1, reward: 100 },
+        { id: 'deal_5', title: 'Опытный барыга', desc: 'Совершите 5 сделок', target: 5, reward: 500 },
+        { id: 'rich_1000', title: 'На пути к успеху', desc: 'Накопите 1000 счетов', target: 1000, reward: 300 }
+    ];
+
+    let html = `
+        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px;">
+            <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">🏆 Достижения и квесты</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+    `;
+
+    achievementsList.forEach(ach => {
+        let currentProgress = 0;
+        if (ach.id.startsWith('deal')) currentProgress = resellerState.dealsCount;
+        if (ach.id.startsWith('rich')) currentProgress = resellerState.balance;
+
+        let isCompleted = currentProgress >= ach.target;
+        let isClaimed = resellerState.claimedAchievements.includes(ach.id);
+
+        let statusBtn = '';
+        if (isClaimed) {
+            statusBtn = `<span style="font-size: 11px; color: #34c759; font-weight: 700;">Получено ✓</span>`;
+        } else if (isCompleted) {
+            statusBtn = `<button style="background:#34c759; color:white; border:none; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;" onclick="claimAchievement('${ach.id}', ${ach.reward})">Забрать +${ach.reward} BYN</button>`;
+        } else {
+            statusBtn = `<span style="font-size: 11px; color: var(--text-muted);">${currentProgress}/${ach.target}</span>`;
+        }
+
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--btn-secondary-bg); padding: 8px 10px; border-radius: 8px;">
+                <div>
+                    <div style="font-size: 13px; font-weight: 700;">${ach.title}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">${ach.desc}</div>
+                </div>
+                <div>${statusBtn}</div>
+            </div>
+        `;
+    });
+
+    html += `</div></div>`;
+    achContainer.innerHTML = html;
+}
+
+window.claimAchievement = function(achId, rewardAmount) {
+    if (resellerState.claimedAchievements.includes(achId)) return;
+
+    resellerState.claimedAchievements.push(achId);
+    resellerState.balance += rewardAmount;
+    triggerHaptic('success');
     saveResellerState();
-    alert('Уровень склада сброшен до Гаража (для тестирования).');
+    alert(`🎉 Награда получена! +${rewardAmount} BYN зачислено на баланс.`);
 };
 
 function spawnResellerLot() {
@@ -2494,7 +2561,7 @@ function startResellerTimer(seconds) {
 }
 
 window.resetResellerGame = function() {
-    resellerState = { balance: 500, dealsCount: 0, inventory: [], warehouseLevel: 0 };
+    resellerState = { balance: 500, dealsCount: 0, inventory: [], warehouseLevel: 0, claimedAchievements: [] };
     saveResellerState();
     location.reload();
 };
