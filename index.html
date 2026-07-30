@@ -85,25 +85,26 @@
             <div id="my-products-tab-grid" class="products-grid"></div>
         </div>
 
-        <!-- Вкладка: Мой Профиль (добавлен padding-bottom снизу) -->
+        <!-- Вкладка: Мой Профиль -->
         <div id="tab-profile" class="tab-content hidden" style="padding-bottom: 50px;">
-            <div class="profile-card">
+            <div class="profile-card" style="display: flex; flex-direction: column; align-items: center;">
                 <div id="user-avatar" class="profile-avatar">👤</div>
                 <h2 id="user-name" class="profile-name">Имя Пользователя</h2>
                 <div id="user-tg-tag" class="profile-username">@username</div>
                 
                 <!-- Описание О себе -->
-                <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; margin-bottom: 8px; display: none;"></p>
+                <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; margin-bottom: 4px; display: none; width: 100%;"></p>
 
-                <div id="profile-badge" class="profile-badge unverified">❌ Профиль не подтвержден</div>
+                <!-- Статус верификации -->
+                <div id="profile-badge" class="profile-badge unverified" style="margin-top: 6px;">❌ Профиль не подтвержден</div>
                 
-                <!-- Кнопки управления профилем -->
-                <div style="display: flex; justify-content: center; gap: 10px; margin-top: -12px; margin-bottom: 12px; position: relative; z-index: 2;">
+                <!-- Кнопки управления профилем (теперь выстроены гармонично в колонку с отступами) -->
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 8px; width: 100%;">
                     <button id="open-verify-btn" class="btn-secondary" onclick="openVerifyModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">Верификация</button>
                     <button id="open-edit-profile-btn" class="btn-secondary" onclick="openSettingsModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">⚙️ Настройки</button>
                 </div>
 
-                <div class="rating-box">
+                <div class="rating-box" style="margin-top: 10px;">
                     <span id="profile-rating-score" class="rating-score">0.0</span>
                     <span id="profile-rating-stars" class="rating-stars">⭐⭐⭐⭐⭐</span>
                     <span id="profile-reviews-count" class="rating-count">(0 отзывов)</span>
