@@ -20,7 +20,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// === БАЗА ПОДКАТЕГОРИЙ ===
+// === БАЗА ПОДКАТЕГОРИЙ И РАЗМЕРОВ ===
 const subcategoriesMap = {
     "Электроника": ["Телефоны", "Компьютеры и ноутбуки", "Умные часы", "Наушники", "Планшеты", "Игровые приставки", "Другая электроника"],
     "Одежда": ["Футболки и майки", "Штаны и джинсы", "Верхняя одежда", "Кофты и худи", "Рубашки", "Платья и юбки", "Другая одежда"],
@@ -28,6 +28,10 @@ const subcategoriesMap = {
     "Аксессуары": ["Сумки и рюкзаки", "Часы", "Очки", "Украшения", "Головные уборы", "Другие аксессуары"],
     "Другое": [] 
 };
+
+// Размеры для одежды и обуви
+const clothingSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "Оверсайз / Универсальный"];
+const shoeSizes = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
 
 function triggerHaptic(type = 'light') {
     if (!tg?.HapticFeedback) return;
@@ -45,7 +49,6 @@ let products = [];
 let allReviews = [];
 let myPurchases = [];
 
-// Привязка пользователя и его избранного
 let currentUser = JSON.parse(localStorage.getItem('my_marketplace_user')) || null;
 let favorites = currentUser ? (JSON.parse(localStorage.getItem(`favs_${currentUser.username}`)) || []) : [];
 
@@ -55,7 +58,7 @@ let editingProductId = null;
 let currentImageIndex = 0;
 let currentProductImages = [];
 let pendingDeleteId = null;
-let tempAvatarBase64 = null; // Для модалки профиля
+let tempAvatarBase64 = null; 
 
 let isDarkTheme = localStorage.getItem('my_marketplace_theme') === 'dark';
 let activeSellerData = { name: '', telegram: '' };
@@ -66,31 +69,6 @@ function hideLoader() {
         loader.classList.add('hidden');
     }
 }
-
-// === Глобальные функции для кнопок профиля (чтобы работали 100%) ===
-window.openSettingsModal = function() {
-    triggerHaptic('light');
-    document.getElementById('edit-name-input').value = currentUser.name || '';
-    document.getElementById('edit-bio-input').value = currentUser.bio || '';
-    
-    const editAvatarPreview = document.getElementById('edit-avatar-preview');
-    if (currentUser.customAvatar) {
-        editAvatarPreview.innerHTML = `<img src="${currentUser.customAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
-    } else if (currentUser.photoUrl) {
-        editAvatarPreview.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%; height:100%; object-fit:cover;">`;
-    } else {
-        editAvatarPreview.innerHTML = '👤';
-    }
-    
-    tempAvatarBase64 = null;
-    document.getElementById('edit-profile-modal').classList.remove('hidden');
-};
-
-window.openVerifyModal = function() {
-    triggerHaptic('light');
-    document.getElementById('verify-modal').classList.remove('hidden');
-};
-
 
 // Универсальная функция подсчета рейтинга
 function updateRatingUI(reviewsArray, scoreId, starsId, countId) {
@@ -123,13 +101,17 @@ function updateRatingUI(reviewsArray, scoreId, starsId, countId) {
     }
 }
 
-// Динамическое обновление списка подкатегорий
-function updateSubcategories(categoryValue, selectedSubcategory = '') {
+// Динамическое обновление подкатегорий и размеров
+function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSize = '') {
     const subContainer = document.getElementById('subcategory-container');
     const subSelect = document.getElementById('subcategory-select');
     
+    const sizeContainer = document.getElementById('size-container');
+    const sizeSelect = document.getElementById('size-select');
+    
     const subs = subcategoriesMap[categoryValue];
     
+    // 1. Обработка подкатегорий
     if (subs && subs.length > 0) {
         subSelect.innerHTML = '';
         subs.forEach(sub => {
@@ -145,6 +127,27 @@ function updateSubcategories(categoryValue, selectedSubcategory = '') {
     } else {
         subSelect.innerHTML = '';
         subContainer.style.display = 'none';
+    }
+
+    // 2. Обработка размеров (показываем только для Одежды и Обуви)
+    if (categoryValue === "Одежда" || categoryValue === "Обувь") {
+        sizeSelect.innerHTML = '';
+        let targetSizes = (categoryValue === "Одежда") ? clothingSizes : shoeSizes;
+        
+        targetSizes.forEach(sz => {
+            const opt = document.createElement('option');
+            opt.value = sz;
+            opt.textContent = `Размер: ${sz}`;
+            sizeSelect.appendChild(opt);
+        });
+
+        if (selectedSize && targetSizes.includes(selectedSize)) {
+            sizeSelect.value = selectedSize;
+        }
+        sizeContainer.style.display = 'block';
+    } else {
+        sizeSelect.innerHTML = '';
+        sizeContainer.style.display = 'none';
     }
 }
 
@@ -210,7 +213,6 @@ function listenFirebasePurchases() {
       });
 }
 
-// ФИКСАЦИЯ ПРОСМОТРА ТОВАРА
 async function logProductView(productId) {
     if (!currentUser || !currentUser.username) return;
 
@@ -232,7 +234,6 @@ async function logProductView(productId) {
     }
 }
 
-// ПРОВЕРКА ПЕНДИНГ-ОТЗЫВОВ
 function checkPendingReviewRequests() {
     if (!currentUser || !currentUser.username) return;
 
@@ -376,7 +377,6 @@ async function syncUserWithFirebase() {
             currentUser.isVerified = !!data.isVerified;
             currentUser.phone = data.phone || currentUser.phone || '';
             
-            // Подтягиваем профиль (описание, кастомная ава, избранное)
             if (data.bio) currentUser.bio = data.bio;
             if (data.customAvatar) currentUser.customAvatar = data.customAvatar;
             if (data.favorites) favorites = data.favorites;
@@ -487,6 +487,9 @@ function setupViewModalCommon(product) {
     let categoryText = product.category || 'Другое';
     if (product.subcategory) {
         categoryText += ` • ${product.subcategory}`;
+    }
+    if (product.size) {
+        categoryText += ` • Размер: ${product.size}`;
     }
 
     document.getElementById('view-title').textContent = product.title;
@@ -771,11 +774,11 @@ function renderProfile() {
     if (currentUser.isVerified) {
         badgeEl.textContent = '✓ Профиль подтверждён';
         badgeEl.className = 'profile-badge verified';
-        if (openVerifyBtn) openVerifyBtn.style.display = 'none'; // Скрываем кнопку, если подтвержден
+        if (openVerifyBtn) openVerifyBtn.style.display = 'none'; 
     } else {
         badgeEl.textContent = '❌ Профиль не подтвержден';
         badgeEl.className = 'profile-badge unverified';
-        if (openVerifyBtn) openVerifyBtn.style.display = 'block'; // Показываем, если не подтвержден
+        if (openVerifyBtn) openVerifyBtn.style.display = 'block'; 
     }
 
     document.getElementById('fav-ads-count').textContent = favorites.length;
@@ -859,7 +862,6 @@ function renderPublicProfileProducts(sellerTelegram) {
     });
 }
 
-// Привязка избранного к конкретному аккаунту и синхронизация с Firebase
 window.toggleFavorite = async function(event, id) {
     event.stopPropagation();
     if (favorites.includes(id)) {
@@ -992,6 +994,7 @@ async function finalizeProductDeletion(buyerUsername) {
                 price: product.price,
                 category: product.category || 'Другое',
                 subcategory: product.subcategory || '',
+                size: product.size || '',
                 city: product.city || 'Минск',
                 seller: product.seller || 'Продавец',
                 telegram: product.telegram || '',
@@ -1086,7 +1089,7 @@ function openEditModal() {
     document.getElementById('currency-select').value = currPart;
 
     document.getElementById('category-select').value = product.category || 'Другое';
-    updateSubcategories(product.category || 'Другое', product.subcategory || '');
+    updateSubcategories(product.category || 'Другое', product.subcategory || '', product.size || '');
 
     document.getElementById('city-select').value = product.city || 'Минск';
     document.getElementById('seller-input').value = product.seller || '';
@@ -1491,7 +1494,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const addBtn = document.getElementById('open-modal-btn');
             if (addBtn) {
-                // Показываем кнопку только на вкладке "Мои товары"
                 if (targetTab === 'tab-my-ads') {
                     addBtn.style.display = ''; 
                 } else {
@@ -1570,6 +1572,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const subContainer = document.getElementById('subcategory-container');
             const subcategoryVal = subContainer.style.display === 'block' ? document.getElementById('subcategory-select').value : '';
 
+            const sizeContainer = document.getElementById('size-container');
+            const sizeVal = sizeContainer.style.display === 'block' ? document.getElementById('size-select').value : '';
+
             const citySelect = document.getElementById('city-select');
             const sellerInput = document.getElementById('seller-input');
             const telegramInput = document.getElementById('telegram-input');
@@ -1595,6 +1600,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     price: finalPrice,
                     category: categorySelect.value,
                     subcategory: subcategoryVal,
+                    size: sizeVal, // Сохраняем выбранный размер
                     city: citySelect.value,
                     seller: sellerInput.value.trim() || 'Частное лицо',
                     telegram: telegramInput.value.trim(),
