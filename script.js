@@ -94,7 +94,6 @@ window.dismissKeyboard = function() {
     if (overlay) overlay.classList.add('hidden');
 };
 
-// Открытие модального окна настроек профиля
 window.openEditProfileModal = function() {
     triggerHaptic('light');
     if (!currentUser) return;
@@ -146,27 +145,18 @@ window.closeFullscreenZoom = function() {
     }
 };
 
-// Листем фото внутри полноэкранного зума
 function updateZoomGalleryUI() {
     const zoomImg = document.getElementById('fullscreen-zoom-img');
     const dotsContainer = document.getElementById('zoom-dots');
-    const prevBtn = document.getElementById('zoom-prev-btn');
-    const nextBtn = document.getElementById('zoom-next-btn');
 
     if (!currentProductImages || currentProductImages.length === 0) return;
-
     zoomImg.src = currentProductImages[currentImageIndex];
 
-    if (currentProductImages.length <= 1) {
-        if (prevBtn) prevBtn.style.display = 'none';
-        if (nextBtn) nextBtn.style.display = 'none';
-        if (dotsContainer) dotsContainer.style.display = 'none';
-    } else {
-        if (prevBtn) prevBtn.style.display = 'flex';
-        if (nextBtn) nextBtn.style.display = 'flex';
-        if (dotsContainer) dotsContainer.style.display = 'flex';
-
-        if (dotsContainer) {
+    if (dotsContainer) {
+        if (currentProductImages.length <= 1) {
+            dotsContainer.style.display = 'none';
+        } else {
+            dotsContainer.style.display = 'flex';
             dotsContainer.innerHTML = '';
             currentProductImages.forEach((_, idx) => {
                 const dot = document.createElement('div');
@@ -177,23 +167,45 @@ function updateZoomGalleryUI() {
     }
 }
 
-window.zoomPrevImage = function() {
-    if (currentImageIndex > 0) {
-        currentImageIndex--;
-        triggerHaptic('selection');
-        updateGallery();
-        updateZoomGalleryUI();
-    }
-};
+// === ПОДДЕРЖКА СВАЙПОВ ДЛЯ ФОТО В ЛАЙТБОКСЕ ===
+let touchStartX = 0;
+let touchEndX = 0;
 
-window.zoomNextImage = function() {
-    if (currentImageIndex < currentProductImages.length - 1) {
-        currentImageIndex++;
-        triggerHaptic('selection');
-        updateGallery();
-        updateZoomGalleryUI();
+document.addEventListener('DOMContentLoaded', () => {
+    const zoomModal = document.getElementById('fullscreen-zoom-modal');
+    if (zoomModal) {
+        zoomModal.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        zoomModal.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleZoomSwipe();
+        }, {passive: true});
     }
-};
+});
+
+function handleZoomSwipe() {
+    const swipeThreshold = 50; // минимальное расстояние для свайпа
+    if (touchEndX < touchStartX - swipeThreshold) {
+        // Свайп влево -> следующая фото
+        if (currentImageIndex < currentProductImages.length - 1) {
+            currentImageIndex++;
+            triggerHaptic('selection');
+            updateGallery();
+            updateZoomGalleryUI();
+        }
+    }
+    if (touchEndX > touchStartX + swipeThreshold) {
+        // Свайп вправо -> предыдущая фото
+        if (currentImageIndex > 0) {
+            currentImageIndex--;
+            triggerHaptic('selection');
+            updateGallery();
+            updateZoomGalleryUI();
+        }
+    }
+}
 
 function updateRatingUI(reviewsArray, scoreId, starsId, countId) {
     const scoreEl = document.getElementById(scoreId);
