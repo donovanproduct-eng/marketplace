@@ -160,7 +160,7 @@
             
             <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Город</label>
             <select id="filter-city-select" class="select-input">
-                <option value="all">📍 Все города</option>
+                <option value="all">Все города</option>
                 <option value="Минск">Минск</option>
                 <option value="Гродно">Гродно</option>
                 <option value="Брест">Брест</option>
@@ -176,10 +176,15 @@
                 <option value="desc">Сначала дороже</option>
             </select>
 
-            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Цена (в 숫자х)</label>
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Цена и валюта</label>
             <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                <input type="number" id="filter-price-min" placeholder="От" class="auth-input" style="margin-bottom: 0;">
-                <input type="number" id="filter-price-max" placeholder="До" class="auth-input" style="margin-bottom: 0;">
+                <input type="number" id="filter-price-min" placeholder="От" class="auth-input" style="flex: 2; margin-bottom: 0;">
+                <input type="number" id="filter-price-max" placeholder="До" class="auth-input" style="flex: 2; margin-bottom: 0;">
+                <select id="filter-currency-select" class="select-input" style="flex: 1.5; margin-bottom: 0;">
+                    <option value="all">Все</option>
+                    <option value="BYN">BYN</option>
+                    <option value="₽">₽ (RUB)</option>
+                </select>
             </div>
 
             <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Размер</label>
@@ -187,7 +192,7 @@
 
             <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Минимальный рейтинг продавца</label>
             <select id="filter-rating-select" class="select-input" style="margin-bottom: 20px;">
-                <любое значение value="0">Любой рейтинг</option>
+                <option value="0">Любой рейтинг</option>
                 <option value="4">⭐⭐⭐⭐ 4.0 и выше</option>
                 <option value="4.5">⭐⭐⭐⭐⭐ 4.5 и выше</option>
                 <option value="5">⭐⭐⭐⭐⭐ Только 5.0</option>
