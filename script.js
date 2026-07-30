@@ -520,7 +520,7 @@ function checkAuth() {
         const addBtn = document.getElementById('open-modal-btn');
         if (activeNav && addBtn) {
             if (activeNav.dataset.tab === 'tab-my-ads') {
-                addBtn.classList.add('hidden'); // на реселлере плюс скрыт
+                addBtn.classList.add('hidden');
             }
         }
     } else {
@@ -1616,6 +1616,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             clearInterval(resellerTimerInterval);
+            
+            // === РЕАЛИЗАЦИЯ 2 ПУНКТА: МИНИ-ИГРА ЛЕГИТ-ЧЕКА (ПРОВЕРКА НА ОРИГИНАЛ) ===
+            // 30% шанс наткнуться на проверку подлинности для дорогих вещей
+            let isCheckTriggered = currentResellerLot.buyPrice > 100 && Math.random() < 0.35;
+            
+            if (isCheckTriggered) {
+                let isActuallyLegit = Math.random() > 0.4; // 60% шанс что оригинал, 40% что паленка
+                let userChoice = confirm(`⚠️ Внимание! Продавец подозрительный.\nПройти легит-чек (проверить на подлинность)?\n\nНажмите «OK», если считаете, что это ОРИГИНАЛ.\nНажмите «Отмена», если это ПАЛЕНКА.`);
+                
+                if (userChoice === isActuallyLegit) {
+                    triggerHaptic('success');
+                    alert(isActuallyLegit ? '✅ Вы угадали! Это 100% оригинал.' : '✅ Верно! Вы раскусили паленку и сэкономили деньги.');
+                    if (!isActuallyLegit) {
+                        // Снижаем цену покупки, так как спаслись от паленки или купили со скидкой
+                        currentResellerLot.buyPrice = Math.floor(currentResellerLot.buyPrice * 0.6);
+                    }
+                } else {
+                    triggerHaptic('error');
+                    alert(isActuallyLegit ? '❌ Ошибка! Это оказался оригинал, вы упустили отличный лот.' : '❌ Ошибка! Вас обманули, это паленка! Товар потерял в стоимости.');
+                    // Паленка стоит сильно дешевле при продаже
+                    currentResellerLot.marketValue = Math.floor(currentResellerLot.buyPrice * 0.7);
+                    currentResellerLot.title += ' [ПАЛЕНКА ⚠️]';
+                }
+            }
+
             resellerState.balance -= currentResellerLot.buyPrice;
             resellerState.inventory.push(currentResellerLot);
             triggerHaptic('success');
@@ -2240,7 +2265,7 @@ function handleZoomSwipe() {
     }
 }
 
-// === ТЕПЕРЬ СИМУЛЯТОР БЕРЕТ ТОВАРЫ ИЗ РЕАЛЬНОЙ БАЗЫ ОБЪЯВЛЕНИЙ (products) ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА (БЕРЕТ ЛОТЫ ИЗ products И ПОДДЕРЖИВАЕТ ЛЕГИТ-ЧЕК) ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
@@ -2271,19 +2296,16 @@ function spawnResellerLot() {
         return;
     }
 
-    // Если в базе нет реальных товаров, показываем заглушку
     if (!products || products.length === 0) {
         cardArea.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Создайте хотя бы одно объявление на вкладке «Объявления», чтобы оно появилось в симуляторе!</div>`;
         setTimeout(spawnResellerLot, 3000);
         return;
     }
 
-    // Берем случайный товар из реальных объявлений базы
     const randomProduct = products[Math.floor(Math.random() * products.length)];
     
-    // Вычисляем цену выкупа на основе цены реального товара
     let rawPriceNum = parseFloat((randomProduct.price || '100').replace(/[^\d.]/g, '')) || 150;
-    const buyPrice = Math.max(30, Math.floor(rawPriceNum * (Math.random() * 0.4 + 0.5))); // 50-90% от цены
+    const buyPrice = Math.max(30, Math.floor(rawPriceNum * (Math.random() * 0.4 + 0.5)));
     const marketMultiplier = (Math.random() * 0.6 + 0.8);
     const marketValue = Math.max(40, Math.floor(buyPrice * marketMultiplier));
 
@@ -2296,7 +2318,6 @@ function spawnResellerLot() {
         marketValue: marketValue
     };
 
-    // Восстанавливаем разметку карточки лота, если там была ошибка/банкротство
     if (!document.getElementById('reseller-lot-img')) {
         cardArea.innerHTML = `
             <div id="reseller-lot-card" class="reseller-card">
@@ -2320,7 +2341,6 @@ function spawnResellerLot() {
                 </div>
             </div>`;
         
-        // Перепривязываем обработчики кнопок
         document.getElementById('reseller-buy-btn').onclick = () => {
             if (!currentResellerLot) return;
             if (resellerState.balance < currentResellerLot.buyPrice) {
@@ -2329,6 +2349,27 @@ function spawnResellerLot() {
                 return;
             }
             clearInterval(resellerTimerInterval);
+            
+            let isCheckTriggered = currentResellerLot.buyPrice > 100 && Math.random() < 0.35;
+            
+            if (isCheckTriggered) {
+                let isActuallyLegit = Math.random() > 0.4;
+                let userChoice = confirm(`⚠️ Внимание! Продавец подозрительный.\nПройти легит-чек (проверить на подлинность)?\n\nНажмите «OK», если считаете, что это ОРИГИНАЛ.\nНажмите «Отмена», если это ПАЛЕНКА.`);
+                
+                if (userChoice === isActuallyLegit) {
+                    triggerHaptic('success');
+                    alert(isActuallyLegit ? '✅ Вы угадали! Это 100% оригинал.' : '✅ Верно! Вы раскусили паленку и сэкономили деньги.');
+                    if (!isActuallyLegit) {
+                        currentResellerLot.buyPrice = Math.floor(currentResellerLot.buyPrice * 0.6);
+                    }
+                } else {
+                    triggerHaptic('error');
+                    alert(isActuallyLegit ? '❌ Ошибка! Это оказался оригинал, вы упустили отличный лот.' : '❌ Ошибка! Вас обманули, это паленка! Товар потерял в стоимости.');
+                    currentResellerLot.marketValue = Math.floor(currentResellerLot.buyPrice * 0.7);
+                    currentResellerLot.title += ' [ПАЛЕНКА ⚠️]';
+                }
+            }
+
             resellerState.balance -= currentResellerLot.buyPrice;
             resellerState.inventory.push(currentResellerLot);
             triggerHaptic('success');
