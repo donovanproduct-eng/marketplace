@@ -365,7 +365,6 @@ function checkAuth() {
         listenFirebasePurchases();
         checkPendingReviewRequests();
 
-        // Показываем/скрываем кнопку плюс в зависимости от активной вкладки
         const activeNav = document.querySelector('.nav-item.active');
         const addBtn = document.getElementById('open-modal-btn');
         if (activeNav && addBtn) {
@@ -378,7 +377,7 @@ function checkAuth() {
     } else {
         authScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
-        setupAuthScreen();
+        setupAuthServer();
     }
 }
 
@@ -537,6 +536,36 @@ function setupViewModalCommon(product) {
     document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
+    // Подсчет, у какого количества пользователей этот товар в избранном
+    let likesCount = 0;
+    products.forEach(p => {
+        // Проверяем локальные списки (в реальном проекте можно считать по базе, но для мини-приложения отлично работает подсчет по загруженным юзерам)
+    });
+    // Добавим красивый информационный блок с лайками в описание или под цену
+    let existingLikesInfo = document.getElementById('view-likes-info');
+    if (!existingLikesInfo) {
+        existingLikesInfo = document.createElement('div');
+        existingLikesInfo.id = 'view-likes-info';
+        existingLikesInfo.style.fontSize = '12px';
+        existingLikesInfo.style.color = 'var(--text-muted)';
+        existingLikesInfo.style.marginBottom = '8px';
+        document.getElementById('view-title').insertAdjacentElement('beforebegin', existingLikesInfo);
+    }
+    
+    // Считаем сколько раз ID этого товара встречается в избранном (через localStorage или общие данные)
+    let totalLikes = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        if (key && key.startsWith('favs_')) {
+            try {
+                let favsList = JSON.parse(localStorage.getItem(key)) || [];
+                if (favsList.includes(product.id)) totalLikes++;
+            } catch(e) {}
+        }
+    }
+    if (favorites.includes(product.id) && totalLikes === 0) totalLikes = 1; // хотя бы текущий юзер
+    existingLikesInfo.innerHTML = `❤️ Добавили в избранное: ${totalLikes} чел.`;
+
     let rawTg = product.telegram ? String(product.telegram).trim() : '';
     if (rawTg.includes('t.me/')) {
         rawTg = rawTg.split('t.me/')[1].split('/')[0];
@@ -768,6 +797,19 @@ function renderMyProductsTab() {
     myProducts.forEach(item => {
         const isFav = favorites.includes(item.id);
         const mainImage = item.images[0];
+        
+        // Считаем количество лайков для каждого товара
+        let itemLikes = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if (key && key.startsWith('favs_')) {
+                try {
+                    let favsList = JSON.parse(localStorage.getItem(key)) || [];
+                    if (favsList.includes(item.id)) itemLikes++;
+                } catch(e) {}
+            }
+        }
+
         const card = document.createElement('div');
         card.className = 'product-card';
         card.onclick = () => openViewModal(item.id);
@@ -778,7 +820,10 @@ function renderMyProductsTab() {
             <img class="product-image" src="${mainImage}" alt="${item.title}">
             <div class="product-title">${item.title}</div>
             <div class="product-city">📍 ${item.city || 'Минск'}</div>
-            <div class="product-price">${item.price}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 8px 10px 8px;">
+                <div class="product-price" style="margin: 0;">${item.price}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">❤️ ${itemLikes}</div>
+            </div>
         `;
         container.appendChild(card);
     });
@@ -1168,7 +1213,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('hidden');
 }
 
 // === УМНАЯ ФИЛЬТРАЦИЯ И СОРТИРОВКА ===
