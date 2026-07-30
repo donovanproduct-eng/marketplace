@@ -49,7 +49,7 @@ function triggerHaptic(type = 'light') {
 let products = [];
 let allReviews = [];
 let myPurchases = [];
-let allProductViews = []; // Кеш для просмотров
+let allProductViews = [];
 
 let currentUser = JSON.parse(localStorage.getItem('my_marketplace_user')) || null;
 let favorites = currentUser ? (JSON.parse(localStorage.getItem(`favs_${currentUser.username}`)) || []) : [];
@@ -546,11 +546,9 @@ function setupViewModalCommon(product) {
     document.getElementById('view-title').textContent = product.title;
     document.getElementById('view-price').textContent = product.price; 
     document.getElementById('view-category').textContent = categoryText;
-    // Убираем булавку/чупа-чупс, оставляем только текст города
     document.getElementById('view-city').textContent = product.city || 'Минск';
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
-    // Считаем лайки и просмотры для этого товара
     let totalLikes = 0;
     for (let i = 0; i < localStorage.length; i++) {
         let key = localStorage.key(i);
