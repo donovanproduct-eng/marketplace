@@ -1404,7 +1404,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('hidden');
 }
 
 function renderSearchTags() {
@@ -1610,6 +1610,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (buyBtn) {
         buyBtn.onclick = () => {
             if (!currentResellerLot) return;
+            
+            // Проверка вместимости склада
+            let maxSlots = resellerState.warehouseLevel === 2 ? 12 : (resellerState.warehouseLevel === 1 ? 8 : 4);
+            if (resellerState.inventory.length >= maxSlots) {
+                triggerHaptic('error');
+                alert(`Склад заполнен! Максимум ${maxSlots} слотов. Продайте что-то со склада или улучшите его.`);
+                return;
+            }
+
             if (resellerState.balance < currentResellerLot.buyPrice) {
                 triggerHaptic('error');
                 alert('Недостаточно средств на балансе!');
@@ -1633,6 +1642,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     triggerHaptic('error');
                     alert(isActuallyLegit ? '❌ Ошибка! Это оказался оригинал, вы упустили отличный лот.' : '❌ Ошибка! Вас обманули, это паленка! Товар потерял в стоимости.');
                     currentResellerLot.marketValue = Math.floor(currentResellerLot.buyPrice * 0.7);
+                    currentResellerLot.fixedSellPrice = Math.floor(currentResellerLot.marketValue * 0.85);
                     currentResellerLot.isFake = true; 
                 }
             }
@@ -2261,11 +2271,12 @@ function handleZoomSwipe() {
     }
 }
 
-// === СИМУЛЯТОР РЕСЕЛЛЕРА (ФИКС ФИКСИРОВАННОЙ РЫНОЧНОЙ СТОИМОСТИ) ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА + АПРЕЙД СКЛАДА (ГАРАЖ/ШОУРУМ) ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
-    inventory: []
+    inventory: [],
+    warehouseLevel: 0 // 0 - Гараж (4 слота), 1 - Шоурум (8 слотов), 2 - Бутик (12 слотов)
 };
 let currentResellerLot = null;
 let resellerTimerInterval = null;
@@ -2280,8 +2291,55 @@ function updateResellerUI() {
     const dealsEl = document.getElementById('reseller-deals-count');
     if (balEl) balEl.textContent = `${resellerState.balance} BYN`;
     if (dealsEl) dealsEl.textContent = resellerState.dealsCount;
+
+    // Рендер виджета информации о складе
+    renderWarehouseBar();
     renderResellerInventory();
 }
+
+function renderWarehouseBar() {
+    let barContainer = document.getElementById('warehouse-upgrade-widget');
+    if (!barContainer) {
+        const headerEl = document.querySelector('.reseller-header');
+        if (headerEl) {
+            barContainer = document.createElement('div');
+            barContainer.id = 'warehouse-upgrade-widget';
+            headerEl.insertAdjacentElement('afterend', barContainer);
+        }
+    }
+
+    if (!barContainer) return;
+
+    let maxSlots = resellerState.warehouseLevel === 2 ? 12 : (resellerState.warehouseLevel === 1 ? 8 : 4);
+    let title = resellerState.warehouseLevel === 2 ? '🏬 Бизнес-бутик' : (resellerState.warehouseLevel === 1 ? '🏢 Шоурум' : '🏠 Гараж');
+    let nextCost = resellerState.warehouseLevel === 0 ? 1500 : (resellerState.warehouseLevel === 1 ? 4000 : 0);
+
+    let upgradeBtnHtml = resellerState.warehouseLevel < 2 ? 
+        `<button class="warehouse-upgrade-btn" onclick="upgradeWarehouse(${nextCost})">Улучшить за ${nextCost} BYN</button>` : 
+        `<span style="font-size:11px; color:#34c759; font-weight:750;">Максимум</span>`;
+
+    barContainer.className = 'warehouse-upgrade-bar';
+    barContainer.innerHTML = `
+        <div>
+            <div class="warehouse-info-title">${title} (${resellerState.inventory.length}/${maxSlots} мест)</div>
+            <div class="warehouse-info-subtitle">${resellerState.warehouseLevel === 0 ? 'Следующий: Шоурум (8 мест)' : (resellerState.warehouseLevel === 1 ? 'Следующий: Бутик (12 мест)' : 'Максимальный уровень')}</div>
+        </div>
+        ${upgradeBtnHtml}
+    `;
+}
+
+window.upgradeWarehouse = function(cost) {
+    if (resellerState.balance < cost) {
+        triggerHaptic('error');
+        alert('Недостаточно средств для улучшения склада!');
+        return;
+    }
+    resellerState.balance -= cost;
+    resellerState.warehouseLevel++;
+    triggerHaptic('success');
+    saveResellerState();
+    alert('Поздравляем! Склад успешно улучшен!');
+};
 
 function spawnResellerLot() {
     const cardArea = document.getElementById('reseller-game-area');
@@ -2312,7 +2370,7 @@ function spawnResellerLot() {
         desc: randomProduct.description || 'Реальный товар с маркетплейса.',
         buyPrice: buyPrice,
         marketValue: marketValue,
-        fixedSellPrice: Math.floor(marketValue * (Math.random() * 0.2 + 0.9)), // Фиксируем цену продажи при покупке, чтобы она не скакала
+        fixedSellPrice: Math.floor(marketValue * (Math.random() * 0.2 + 0.9)),
         isFake: false,
         isCleaned: false
     };
@@ -2342,6 +2400,14 @@ function spawnResellerLot() {
         
         document.getElementById('reseller-buy-btn').onclick = () => {
             if (!currentResellerLot) return;
+
+            let maxSlots = resellerState.warehouseLevel === 2 ? 12 : (resellerState.warehouseLevel === 1 ? 8 : 4);
+            if (resellerState.inventory.length >= maxSlots) {
+                triggerHaptic('error');
+                alert(`Склад заполнен! Максимум ${maxSlots} слотов. Продайте что-то со склада или улучшите его.`);
+                return;
+            }
+
             if (resellerState.balance < currentResellerLot.buyPrice) {
                 triggerHaptic('error');
                 alert('Недостаточно средств на балансе!');
@@ -2421,7 +2487,7 @@ function startResellerTimer(seconds) {
 }
 
 window.resetResellerGame = function() {
-    resellerState = { balance: 500, dealsCount: 0, inventory: [] };
+    resellerState = { balance: 500, dealsCount: 0, inventory: [], warehouseLevel: 0 };
     saveResellerState();
     location.reload();
 };
@@ -2440,7 +2506,6 @@ function renderResellerInventory() {
         const div = document.createElement('div');
         div.className = 'reseller-item-card';
         
-        // Используем фиксированную цену продажи товара, чтобы она не менялась при покупке новых лотов
         let sellOffer = item.fixedSellPrice;
         let profit = sellOffer - item.buyPrice;
         let profitColor = profit >= 0 ? '#34c759' : '#ff3b30';
@@ -2478,8 +2543,8 @@ window.cleanResellerItem = function(index, cost) {
     resellerState.balance -= cost;
     let item = resellerState.inventory[index];
     item.isCleaned = true;
-    item.buyPrice += cost; // добавляем стоимость химчистки к затратам
-    item.fixedSellPrice = Math.floor(item.fixedSellPrice * 1.35); // увеличиваем фиксированную цену продажи на 35%
+    item.buyPrice += cost; 
+    item.fixedSellPrice = Math.floor(item.fixedSellPrice * 1.35); 
     
     triggerHaptic('success');
     saveResellerState();
