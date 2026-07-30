@@ -1190,7 +1190,6 @@ function openEditModal() {
     
     updateSubcategories(catVal, product.subcategory || '', product.size || '');
 
-    // Обработка города при редактировании
     const citySelect = document.getElementById('city-select');
     const customCityInput = document.getElementById('custom-city-input');
     
@@ -1263,8 +1262,13 @@ function filterAndRender() {
             matchesCat = product.category === currentCategory;
         }
 
-        // Фильтр по городу
-        let matchesCity = currentFilters.city === 'all' || (product.city || 'Минск') === currentFilters.city;
+        // Фильтр по городу (учитываем кастомный ввод в фильтрах)
+        let matchesCity = true;
+        if (currentFilters.city !== 'all') {
+            let pCity = (product.city || 'Минск').toLowerCase();
+            let filterCity = currentFilters.city.toLowerCase();
+            matchesCity = pCity.includes(filterCity);
+        }
 
         // Валюта товара и цена
         let rawPriceStr = product.price || '0';
@@ -1613,7 +1617,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const modal = document.getElementById('modal');
 
-    // Логика выбора города (появление кастомного инпута)
+    // Логика выбора города в форме товара
     const citySelect = document.getElementById('city-select');
     const customCityInput = document.getElementById('custom-city-input');
     if (citySelect && customCityInput) {
@@ -1628,6 +1632,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Логика выбора города в фильтрах поиска
+    const filterCitySelect = document.getElementById('filter-city-select');
+    const filterCustomCityInput = document.getElementById('filter-custom-city-input');
+    if (filterCitySelect && filterCustomCityInput) {
+        filterCitySelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                filterCustomCityInput.classList.remove('hidden');
+                filterCustomCityInput.focus();
+            } else {
+                filterCustomCityInput.classList.add('hidden');
+                filterCustomCityInput.value = '';
+            }
+        });
+    }
+
     // Логика модального окна фильтров
     const filtersModal = document.getElementById('filters-modal');
     const openFiltersBtn = document.getElementById('open-filters-btn');
@@ -1637,7 +1656,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (openFiltersBtn && filtersModal) {
         openFiltersBtn.onclick = () => {
             triggerHaptic('light');
-            document.getElementById('filter-city-select').value = currentFilters.city;
+            
+            // Заполняем поля модалки фильтров сохраненными значениями
+            let fCity = currentFilters.city;
+            if (fCity === 'all') {
+                filterCitySelect.value = 'all';
+                filterCustomCityInput.classList.add('hidden');
+                filterCustomCityInput.value = '';
+            } else if (standardCities.includes(fCity)) {
+                filterCitySelect.value = fCity;
+                filterCustomCityInput.classList.add('hidden');
+                filterCustomCityInput.value = '';
+            } else {
+                filterCitySelect.value = 'custom';
+                filterCustomCityInput.classList.remove('hidden');
+                filterCustomCityInput.value = fCity;
+            }
+
             document.getElementById('filter-sort-select').value = currentFilters.sort;
             document.getElementById('filter-price-min').value = currentFilters.priceMin;
             document.getElementById('filter-price-max').value = currentFilters.priceMax;
@@ -1652,7 +1687,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (applyFiltersBtn && filtersModal) {
         applyFiltersBtn.onclick = () => {
             triggerHaptic('success');
-            currentFilters.city = document.getElementById('filter-city-select').value;
+            
+            // Считываем город из фильтров
+            let fCityVal = filterCitySelect.value;
+            if (fCityVal === 'custom') {
+                currentFilters.city = filterCustomCityInput.value.trim() || 'all';
+            } else {
+                currentFilters.city = fCityVal;
+            }
+
             currentFilters.sort = document.getElementById('filter-sort-select').value;
             currentFilters.priceMin = document.getElementById('filter-price-min').value.trim();
             currentFilters.priceMax = document.getElementById('filter-price-max').value.trim();
@@ -1668,7 +1711,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resetFiltersBtn && filtersModal) {
         resetFiltersBtn.onclick = () => {
             triggerHaptic('warning');
-            document.getElementById('filter-city-select').value = 'all';
+            filterCitySelect.value = 'all';
+            filterCustomCityInput.classList.add('hidden');
+            filterCustomCityInput.value = '';
             document.getElementById('filter-sort-select').value = 'default';
             document.getElementById('filter-price-min').value = '';
             document.getElementById('filter-price-max').value = '';
@@ -1814,7 +1859,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const sizeContainer = document.getElementById('size-container');
             const sizeVal = sizeContainer.style.display === 'block' ? document.getElementById('size-select').value : '';
 
-            // Определяем город (из селекта или кастомный ввод)
             const citySelectVal = document.getElementById('city-select').value;
             const customCityVal = document.getElementById('custom-city-input').value.trim();
             const finalCity = (citySelectVal === 'custom') ? (customCityVal || 'Минск') : citySelectVal;
