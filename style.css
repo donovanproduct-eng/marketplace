@@ -300,8 +300,8 @@ body {
 
 .delete-btn {
     position: absolute;
-    top: 6px;
-    right: 6px;
+    top: 14px;
+    right: 14px;
     background: rgba(0, 0, 0, 0.5);
     color: white;
     border: none;
@@ -318,8 +318,8 @@ body {
 
 .fav-btn {
     position: absolute;
-    top: 6px;
-    left: 6px;
+    top: 14px;
+    left: 14px;
     background: rgba(255, 255, 255, 0.85);
     border: none;
     border-radius: 50%;
