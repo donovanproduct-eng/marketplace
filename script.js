@@ -1094,7 +1094,7 @@ function openEditModal() {
     document.getElementById('telegram-input').value = product.telegram || '';
     document.getElementById('desc-input').value = product.description || '';
 
-    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('hidden');
 }
 
 function openAddModal() {
@@ -1185,13 +1185,14 @@ function renderProducts(itemsToRender) {
     });
 }
 
+// Усиленное сжатие картинок, чтобы объявление гарантированно весило меньше 1 МБ (лимит Firestore)
 function compressImage(file, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const maxDim = 1080;
+            const maxDim = 800; // Уменьшили максимальный размер для стабильности базы данных
             let width = img.width;
             let height = img.height;
 
@@ -1215,7 +1216,8 @@ function compressImage(file, callback) {
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
             
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            // Качество 0.75 дает отличный вид при очень маленьком весе файлов
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
             callback(compressedDataUrl);
         };
         img.onerror = function() { callback(null); };
@@ -1620,7 +1622,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         await db.collection("products").add(productData);
                     }
                 } catch (err) {
-                    // ТЕПЕРЬ ОШИБКА ПОКАЖЕТСЯ НА ЭКРАНЕ ТЕЛЕФОНА
                     console.error("Firebase save error details:", err);
                     alert("Ошибка публикации: " + err.message);
                 }
