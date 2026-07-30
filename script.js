@@ -20,6 +20,15 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// === БАЗА ПОДКАТЕГОРИЙ ===
+const subcategoriesMap = {
+    "Электроника": ["Телефоны", "Компьютеры и ноутбуки", "Умные часы", "Наушники", "Планшеты", "Игровые приставки", "Другая электроника"],
+    "Одежда": ["Футболки и майки", "Штаны и джинсы", "Верхняя одежда", "Кофты и худи", "Рубашки", "Платья и юбки", "Другая одежда"],
+    "Обувь": ["Кроссовки и кеды", "Туфли", "Ботинки", "Сапоги", "Тапочки", "Другая обувь"],
+    "Аксессуары": ["Сумки и рюкзаки", "Часы", "Очки", "Украшения", "Головные уборы", "Другие аксессуары"],
+    "Другое": [] // Если "Другое", подкатегорий нет
+};
+
 function triggerHaptic(type = 'light') {
     if (!tg?.HapticFeedback) return;
     if (type === 'light' || type === 'medium' || type === 'heavy') {
@@ -82,6 +91,31 @@ function updateRatingUI(reviewsArray, scoreId, starsId, countId) {
         else if ([2, 3, 4].includes(c % 10) && ![12, 13, 14].includes(c % 100)) word = 'отзыва';
         
         countEl.textContent = `(${c} ${word})`;
+    }
+}
+
+// Динамическое обновление списка подкатегорий
+function updateSubcategories(categoryValue, selectedSubcategory = '') {
+    const subContainer = document.getElementById('subcategory-container');
+    const subSelect = document.getElementById('subcategory-select');
+    
+    const subs = subcategoriesMap[categoryValue];
+    
+    if (subs && subs.length > 0) {
+        subSelect.innerHTML = '';
+        subs.forEach(sub => {
+            const opt = document.createElement('option');
+            opt.value = sub;
+            opt.textContent = sub;
+            subSelect.appendChild(opt);
+        });
+        if (selectedSubcategory && subs.includes(selectedSubcategory)) {
+            subSelect.value = selectedSubcategory;
+        }
+        subContainer.style.display = 'block';
+    } else {
+        subSelect.innerHTML = '';
+        subContainer.style.display = 'none';
     }
 }
 
@@ -409,9 +443,15 @@ function setupViewModalCommon(product) {
 
     updateGallery();
 
+    // Склеиваем основную категорию и подкатегорию для красивого отображения
+    let categoryText = product.category || 'Другое';
+    if (product.subcategory) {
+        categoryText += ` • ${product.subcategory}`;
+    }
+
     document.getElementById('view-title').textContent = product.title;
-    document.getElementById('view-price').textContent = product.price; // Отображаем сохраненную цену (с BYN или ₽)
-    document.getElementById('view-category').textContent = product.category || 'Другое';
+    document.getElementById('view-price').textContent = product.price; 
+    document.getElementById('view-category').textContent = categoryText;
     document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
@@ -503,7 +543,6 @@ window.openActiveSellerProfile = function() {
     if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
     if (pubTgEl) pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
 
-    // Проверяем статус верификации продавца в базе данных
     if (pubBadgeEl) {
         pubBadgeEl.textContent = '⏳ Проверка...';
         pubBadgeEl.className = 'profile-badge unverified';
@@ -582,7 +621,6 @@ function renderPublicProfileReviews(sellerTelegram) {
     const cleanSellerTg = sellerTelegram.replace('@', '').toLowerCase();
     const sellerReviews = allReviews.filter(r => (r.sellerTelegram || '').toLowerCase() === cleanSellerTg);
     
-    // Обновляем динамический подсчет рейтинга
     updateRatingUI(sellerReviews, 'public-rating-score', 'public-rating-stars', 'public-rating-count');
 
     if (sellerReviews.length === 0) {
@@ -681,7 +719,6 @@ function renderProfile() {
 
     document.getElementById('my-ads-count').textContent = myProducts.length;
 
-    // Обновляем статистику отзывов в своем профиле
     const myTg = currentUser.username.replace('@', '').toLowerCase();
     const myReviews = allReviews.filter(r => (r.sellerTelegram || '').toLowerCase() === myTg);
     updateRatingUI(myReviews, 'profile-rating-score', 'profile-rating-stars', 'profile-reviews-count');
@@ -874,6 +911,7 @@ async function finalizeProductDeletion(buyerUsername) {
                 title: product.title,
                 price: product.price,
                 category: product.category || 'Другое',
+                subcategory: product.subcategory || '',
                 city: product.city || 'Минск',
                 seller: product.seller || 'Продавец',
                 telegram: product.telegram || '',
@@ -960,7 +998,6 @@ function openEditModal() {
 
     document.getElementById('title-input').value = product.title;
     
-    // Парсим сохраненную цену и валюту
     let savedPrice = product.price || '';
     let numPart = savedPrice.replace(/[^\d.,]/g, '').trim(); 
     let currPart = savedPrice.includes('₽') || savedPrice.includes('RUB') ? '₽' : 'BYN';
@@ -969,6 +1006,9 @@ function openEditModal() {
     document.getElementById('currency-select').value = currPart;
 
     document.getElementById('category-select').value = product.category || 'Другое';
+    // Вызываем обновление подкатегорий и подставляем сохраненную (если есть)
+    updateSubcategories(product.category || 'Другое', product.subcategory || '');
+
     document.getElementById('city-select').value = product.city || 'Минск';
     document.getElementById('seller-input').value = product.seller || '';
     document.getElementById('telegram-input').value = product.telegram || '';
@@ -986,8 +1026,11 @@ function openAddModal() {
 
     document.getElementById('title-input').value = '';
     document.getElementById('price-input').value = '';
-    document.getElementById('currency-select').value = 'BYN'; // По умолчанию BYN
+    document.getElementById('currency-select').value = 'BYN';
+    
     document.getElementById('category-select').value = 'Другое';
+    updateSubcategories('Другое'); // Скрываем подкатегории по умолчанию
+
     document.getElementById('city-select').value = 'Минск';
     
     if (currentUser) {
@@ -1144,7 +1187,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Обработчик вкладок
     const pubTabAds = document.getElementById('pub-tab-ads');
     const pubTabReviews = document.getElementById('pub-tab-reviews');
     const pubSecAds = document.getElementById('pub-sec-ads');
@@ -1274,6 +1316,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevImgBtn = document.getElementById('prev-img-btn');
     const nextImgBtn = document.getElementById('next-img-btn');
 
+    // СЛУШАТЕЛЬ ДЛЯ ВЫБОРА КАТЕГОРИИ
+    const categorySelectEl = document.getElementById('category-select');
+    if (categorySelectEl) {
+        categorySelectEl.addEventListener('change', (e) => {
+            updateSubcategories(e.target.value);
+        });
+    }
+
     if (cityFilterSelect) {
         cityFilterSelect.onchange = () => {
             triggerHaptic('selection');
@@ -1371,6 +1421,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const priceInput = document.getElementById('price-input');
             const currencySelect = document.getElementById('currency-select');
             const categorySelect = document.getElementById('category-select');
+            
+            // Получаем подкатегорию, если блок открыт
+            const subContainer = document.getElementById('subcategory-container');
+            const subcategoryVal = subContainer.style.display === 'block' ? document.getElementById('subcategory-select').value : '';
+
             const citySelect = document.getElementById('city-select');
             const sellerInput = document.getElementById('seller-input');
             const telegramInput = document.getElementById('telegram-input');
@@ -1382,7 +1437,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Склеиваем введенное число и выбранную валюту
             let rawPrice = priceInput.value.trim() || '0';
             let finalPrice = `${rawPrice} ${currencySelect.value}`;
 
@@ -1396,6 +1450,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     title: titleInput.value.trim(),
                     price: finalPrice,
                     category: categorySelect.value,
+                    subcategory: subcategoryVal, // Сохраняем в БД
                     city: citySelect.value,
                     seller: sellerInput.value.trim() || 'Частное лицо',
                     telegram: telegramInput.value.trim(),
