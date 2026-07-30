@@ -365,11 +365,15 @@ function checkAuth() {
         listenFirebasePurchases();
         checkPendingReviewRequests();
 
-        // Показываем кнопку добавления, если открыта вкладка «Мои товары»
+        // Показываем/скрываем кнопку плюс в зависимости от активной вкладки
         const activeNav = document.querySelector('.nav-item.active');
         const addBtn = document.getElementById('open-modal-btn');
-        if (activeNav && activeNav.dataset.tab === 'tab-my-ads' && addBtn) {
-            addBtn.classList.remove('hidden');
+        if (activeNav && addBtn) {
+            if (activeNav.dataset.tab === 'tab-my-ads') {
+                addBtn.classList.remove('hidden');
+            } else {
+                addBtn.classList.add('hidden');
+            }
         }
     } else {
         authScreen.classList.remove('hidden');
