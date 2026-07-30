@@ -1404,7 +1404,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('hidden');
 }
 
 function renderSearchTags() {
@@ -2177,106 +2177,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const citySelectVal = document.getElementById('city-select').value;
             const customCityVal = document.getElementById('custom-city-input').value.trim();
-            const finalCity = (citySelectVal === 'custom') ? (customCityVal || 'Минск') : citySelectVal;
-
-            const sellerInput = document.getElementById('seller-input');
-            const telegramInput = document.getElementById('telegram-input');
-            const descInput = document.getElementById('desc-input');
-
-            if (!titleInput.value.trim()) {
-                triggerHaptic('error');
-                alert('Введите название товара!');
-                return;
-            }
-
-            let rawPrice = priceInput.value.trim() || '0';
-            let finalPrice = `${rawPrice} ${currencySelect.value}`;
-
-            triggerHaptic('success');
-            modal.classList.add('hidden');
-
-            const files = fileInput.files ? Array.from(fileInput.files).slice(0, 4) : [];
-
-            const applyChangesWithIssues = async (imagesArray) => {
-                const productData = {
-                    title: titleInput.value.trim(),
-                    price: finalPrice,
-                    category: categorySelect.value || 'Другое',
-                    subcategory: subcategoryVal || '',
-                    size: sizeVal || '',
-                    city: finalCity,
-                    seller: sellerInput.value.trim() || 'Частное лицо',
-                    telegram: telegramInput.value.trim() || '',
-                    description: descInput.value.trim() || '',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-
-                if (imagesArray && imagesArray.length > 0) {
-                    productData.images = imagesArray;
-                }
-
-                try {
-                    if (editingProductId) {
-                        await db.collection("products").doc(editingProductId).update(productData);
-                    } else {
-                        if (!productData.images) {
-                            productData.images = ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
-                        }
-                        await db.collection("products").add(productData);
-                    }
-                } catch (err) {
-                    console.error("Firebase save error details:", err);
-                    alert("Ошибка публикации: " + err.message);
-                }
-            };
-
-            if (files.length > 0) {
-                let processedImages = [];
-                let counter = 0;
-
-                files.forEach(file => {
-                    compressImage(file, (compressedUrl) => {
-                        if (compressedUrl) processedImages.push(compressedUrl);
-                        counter++;
-                        if (counter === files.length) {
-                            applyChangesWithIssues(processedImages);
-                        }
-                    });
-                });
-            } else {
-                applyChangesWithIssues([]);
-            }
-        };
+    };
     }
 });
 
-function handleZoomSwipe() {
-    const swipeThreshold = 50;
-    if (touchEndX < touchStartX - swipeThreshold) {
-        if (currentImageIndex < currentProductImages.length - 1) {
-            currentImageIndex++;
-            triggerHaptic('selection');
-            updateGallery();
-            updateZoomGalleryUI();
-        }
-    }
-    if (touchEndX > touchStartX + swipeThreshold) {
-        if (currentImageIndex > 0) {
-            currentImageIndex--;
-            triggerHaptic('selection');
-            updateGallery();
-            updateZoomGalleryUI();
-        }
-    }
-}
-
-// === СИМУЛЯТОР РЕСЕЛЛЕРА (МНОГОУРОВНЕВАЯ СИСТЕМА СКЛАДА) ===
+// СИМУЛЯТОР РЕСЕЛЛЕРА + СИСТЕМА УЛУЧШЕНИЯ СКЛАДА
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
     inventory: [],
-    warehouseLevel: 0 // 0: Гараж (4), 1: Шоурум (8), 2: Бутик (12), 3: Мега-молл (20)
+    warehouseLevel: 0 
 };
+if (resellerState.warehouseLevel === undefined) resellerState.warehouseLevel = 0;
+
 let currentResellerLot = null;
 let resellerTimerInterval = null;
 
@@ -2310,7 +2223,7 @@ function renderWarehouseBar() {
 
     let maxSlots = resellerState.warehouseLevel === 3 ? 20 : (resellerState.warehouseLevel === 2 ? 12 : (resellerState.warehouseLevel === 1 ? 8 : 4));
     let title = resellerState.warehouseLevel === 3 ? '🏬 Мега-молл' : (resellerState.warehouseLevel === 2 ? '🏛️ Бутик' : (resellerState.warehouseLevel === 1 ? '🏢 Шоурум' : '🏠 Гараж'));
-    let nextCost = resellerState.warehouseLevel === 0 ? 1500 : (resellerState.warehouseLevel === 1 ? 4000 : (resellerState.warehouseLevel === 2 ? 10000 : 0));
+    let nextCost = resellerState.warehouseLevel === 0 ? 1000 : (resellerState.warehouseLevel === 1 ? 3000 : (resellerState.warehouseLevel === 2 ? 7500 : 0));
 
     let upgradeBtnHtml = resellerState.warehouseLevel < 3 ? 
         `<button class="warehouse-upgrade-btn" onclick="upgradeWarehouse(${nextCost})">Улучшить за ${nextCost} BYN</button>` : 
@@ -2320,7 +2233,7 @@ function renderWarehouseBar() {
     barContainer.innerHTML = `
         <div>
             <div class="warehouse-info-title">${title} (${resellerState.inventory.length}/${maxSlots} мест)</div>
-            <div class="warehouse-info-subtitle">${resellerState.warehouseLevel === 0 ? 'Следующий: Шоурум (8 мест)' : (resellerState.warehouseLevel === 1 ? 'Следующий: Бутик (12 мест)' : (resellerState.warehouseLevel === 2 ? 'Следующий: Мега-молл (20 мест)' : 'Максимальный уровень'))}</div>
+            <div class="warehouse-info-subtitle">${resellerState.warehouseLevel === 0 ? 'След: Шоурум (8 мест)' : (resellerState.warehouseLevel === 1 ? 'След: Бутик (12 мест)' : (resellerState.warehouseLevel === 2 ? 'След: Мега-молл (20 мест)' : 'Максимальный уровень'))}</div>
         </div>
         ${upgradeBtnHtml}
     `;
