@@ -34,7 +34,7 @@ body {
 }
 
 #app:not(.hidden) {
-    padding-bottom: 70px;
+    padding-bottom: 80px;
 }
 
 #app.hidden { display: none; }
@@ -187,17 +187,6 @@ body {
     color: var(--text-color);
     font-size: 14px;
     outline: none;
-}
-
-.city-select {
-    padding: 10px 8px;
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-    background-color: var(--card-bg);
-    color: var(--text-color);
-    font-size: 13px;
-    outline: none;
-    font-weight: 600;
 }
 
 .theme-btn {
@@ -523,10 +512,11 @@ body {
 .nav-icon { font-size: 20px; margin-bottom: 2px; }
 .nav-item.active { color: #007aff; }
 
+/* Кнопка добавления (+) */
 .add-btn {
     position: fixed;
-    bottom: 74px;
-    right: 24px;
+    bottom: 75px;
+    right: 20px;
     width: 56px;
     height: 56px;
     border-radius: 28px;
@@ -539,7 +529,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 5;
+    z-index: 1000;
+}
+
+/* Жесткое скрытие с помощью класса hidden */
+.add-btn.hidden {
+    display: none !important;
 }
 
 .modal {
@@ -553,10 +548,10 @@ body {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    z-index: 1000;
+    z-index: 2000;
 }
 
-.modal.hidden { display: none; }
+.modal.hidden { display: none !important; }
 
 .modal-content {
     background: var(--card-bg);
