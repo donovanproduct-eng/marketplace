@@ -29,7 +29,7 @@ const subcategoriesMap = {
     "Другое": [] 
 };
 
-// Размеры для одежды и обуви (с половинчатыми размерами для обуви)
+// Чистые значения размеров для одежды и обуви (с половинками)
 const clothingSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "Оверсайз / Универсальный"];
 const shoeSizes = [
     "35", "35.5", "36", "36.5", "37", "37.5", "38", "38.5", "39", "39.5", 
@@ -47,7 +47,6 @@ function triggerHaptic(type = 'light') {
     }
 }
 
-// Переменные
 let products = [];
 let allReviews = [];
 let myPurchases = [];
@@ -73,7 +72,6 @@ function hideLoader() {
     }
 }
 
-// Универсальная функция подсчета рейтинга
 function updateRatingUI(reviewsArray, scoreId, starsId, countId) {
     const scoreEl = document.getElementById(scoreId);
     const starsEl = document.getElementById(starsId);
@@ -114,7 +112,6 @@ function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSi
     
     const subs = subcategoriesMap[categoryValue];
     
-    // 1. Обработка подкатегорий
     if (subs && subs.length > 0) {
         subSelect.innerHTML = '';
         subs.forEach(sub => {
@@ -132,7 +129,6 @@ function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSi
         subContainer.style.display = 'none';
     }
 
-    // 2. Обработка размеров (Одежда / Обувь)
     if (categoryValue === "Одежда" || categoryValue === "Обувь") {
         sizeSelect.innerHTML = '';
         let targetSizes = (categoryValue === "Одежда") ? clothingSizes : shoeSizes;
@@ -140,7 +136,7 @@ function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSi
         targetSizes.forEach(sz => {
             const opt = document.createElement('option');
             opt.value = sz;
-            opt.textContent = `Размер: ${sz}`;
+            opt.textContent = sz; // Чистое значение без лишних префиксов
             sizeSelect.appendChild(opt);
         });
 
@@ -1628,8 +1624,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         await db.collection("products").add(productData);
                     }
                 } catch (err) {
-                    console.error("Ошибка сохранения в Firebase:", err);
-                    alert("Ошибка публикации!");
+                    // Выводим точную ошибку в консоль браузера для диагностики
+                    console.error("Firebase save error details:", err);
+                    alert("Ошибка публикации! Проверьте консоль.");
                 }
             };
 
