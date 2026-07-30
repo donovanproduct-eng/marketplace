@@ -1604,6 +1604,9 @@ document.addEventListener('DOMContentLoaded', () => {
     updateResellerUI();
     spawnResellerLot();
 
+    // Запуск таймера обновления квестов каждую секунду
+    setInterval(updateQuestsTimerUI, 1000);
+
     const buyBtn = document.getElementById('reseller-buy-btn');
     const skipBtn = document.getElementById('reseller-skip-btn');
 
@@ -1657,6 +1660,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (skipBtn) {
         skipBtn.onclick = () => {
             clearInterval(resellerTimerInterval);
+            // Учет в квестах: пропуск лота
+            checkDailyQuestProgress('skip', 1);
             triggerHaptic('light');
             spawnResellerLot();
         };
@@ -2270,16 +2275,27 @@ function handleZoomSwipe() {
     }
 }
 
-// === СИМУЛЯТОР РЕСЕЛЛЕРА (МАКСИМАЛЬНЫЙ УРОВЕНЬ СКЛАДА БЕЗ СБРОСА + ПАНЕЛЬ ДОСТИЖЕНИЙ) ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА (МАКСИМАЛЬНЫЙ УРОВЕНЬ СКЛАДА + СУТОЧНЫЕ КВЕСТЫ С ТАЙМЕРОМ) ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
     inventory: [],
     warehouseLevel: 0,
-    claimedAchievements: [] // Сохраненные награды за квесты
+    dailyQuests: {
+        lastResetTime: Date.now(),
+        progress: { sell_2: 0, clean_1: 0, skip_3: 0 },
+        claimed: []
+    }
 };
+
 if (resellerState.warehouseLevel === undefined) resellerState.warehouseLevel = 0;
-if (!resellerState.claimedAchievements) resellerState.claimedAchievements = [];
+if (!resellerState.dailyQuests) {
+    resellerState.dailyQuests = {
+        lastResetTime: Date.now(),
+        progress: { sell_2: 0, clean_1: 0, skip_3: 0 },
+        claimed: []
+    };
+}
 
 let currentResellerLot = null;
 let resellerTimerInterval = null;
@@ -2287,6 +2303,46 @@ let resellerTimerInterval = null;
 function saveResellerState() {
     localStorage.setItem('reseller_state', JSON.stringify(resellerState));
     updateResellerUI();
+}
+
+function checkAndResetDailyQuests() {
+    const now = Date.now();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    
+    if (now - resellerState.dailyQuests.lastResetTime >= twentyFourHours) {
+        resellerState.dailyQuests = {
+            lastResetTime: now,
+            progress: { sell_2: 0, clean_1: 0, skip_3: 0 },
+            claimed: []
+        };
+        saveResellerState();
+    }
+}
+
+function checkDailyQuestProgress(questKey, amount = 1) {
+    checkAndResetDailyQuests();
+    if (!resellerState.dailyQuests.claimed.includes(questKey)) {
+        resellerState.dailyQuests.progress[questKey] = (resellerState.dailyQuests.progress[questKey] || 0) + amount;
+        saveResellerState();
+    }
+}
+
+function updateQuestsTimerUI() {
+    checkAndResetDailyQuests();
+    const now = Date.now();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    let timeLeft = twentyFourHours - (now - resellerState.dailyQuests.lastResetTime);
+
+    if (timeLeft < 0) timeLeft = 0;
+
+    let hours = Math.floor(timeLeft / (1000 * 60 * 60));
+    let minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    let seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+    let timerEl = document.getElementById('quests-timer-text');
+    if (timerEl) {
+        timerEl.textContent = `Обновление через: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
 }
 
 function updateResellerUI() {
@@ -2317,7 +2373,7 @@ function renderWarehouseBar() {
     let title = resellerState.warehouseLevel === 3 ? '🏬 Мега-молл' : (resellerState.warehouseLevel === 2 ? '🏛️ Бутик' : (resellerState.warehouseLevel === 1 ? '🏢 Шоурум' : '🏠 Гараж'));
     let nextCost = resellerState.warehouseLevel === 0 ? 1000 : (resellerState.warehouseLevel === 1 ? 3000 : (resellerState.warehouseLevel === 2 ? 7500 : 0));
 
-    // Если склад максимальный (Мега-молл), показываем красивый значок "Максимум" без кнопки сброса
+    // Убран сброс: на максимуме просто горит значок "Максимум уровня"
     let upgradeBtnHtml = resellerState.warehouseLevel < 3 ? 
         `<button class="warehouse-upgrade-btn" onclick="upgradeWarehouse(${nextCost})">Улучшить за ${nextCost} BYN</button>` : 
         `<span style="font-size:12px; color:#34c759; font-weight:800; background:rgba(52,199,89,0.12); padding:6px 10px; border-radius:8px;">✓ Максимум</span>`;
@@ -2345,7 +2401,7 @@ window.upgradeWarehouse = function(cost) {
     alert('Поздравляем! Склад успешно улучшен!');
 };
 
-// === ПАНЕЛЬ ДОСТИЖЕНИЙ (КВЕСТОВ) ===
+// === ПАНЕЛЬ СУТОЧНЫХ КВЕСТОВ С ТАЙМЕРОМ ===
 function renderAchievementsWidget() {
     let achContainer = document.getElementById('achievements-widget');
     if (!achContainer) {
@@ -2359,42 +2415,42 @@ function renderAchievementsWidget() {
     }
 
     if (!achContainer) return;
+    checkAndResetDailyQuests();
 
-    // Список квестов
-    const achievementsList = [
-        { id: 'deal_1', title: 'Первая сделка', desc: 'Совершите 1 успешную продажу', target: 1, reward: 100 },
-        { id: 'deal_5', title: 'Опытный барыга', desc: 'Совершите 5 сделок', target: 5, reward: 500 },
-        { id: 'rich_1000', title: 'На пути к успеху', desc: 'Накопите 1000 счетов', target: 1000, reward: 300 }
+    const dailyQuestsList = [
+        { id: 'sell_2', title: 'Быстрый старт', desc: 'Продайте 2 любых товара', target: 2, reward: 150 },
+        { id: 'clean_1', title: 'Мастер чистоты', desc: 'Сделайте 1 химчистку товара', target: 1, reward: 100 },
+        { id: 'skip_3', title: 'Переборщищник', desc: 'Пропустите 3 невыгодных лота', target: 3, reward: 75 }
     ];
 
     let html = `
-        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px;">
-            <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">🏆 Достижения и квесты</div>
+        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="font-weight: 700; font-size: 14px;">🏆 Ежедневные квесты</div>
+                <div id="quests-timer-text" style="font-size: 11px; font-weight: 600; color: #ff9500; background: rgba(255,149,0,0.1); padding: 3px 8px; border-radius: 6px;">Обновление: 24:00:00</div>
+            </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
     `;
 
-    achievementsList.forEach(ach => {
-        let currentProgress = 0;
-        if (ach.id.startsWith('deal')) currentProgress = resellerState.dealsCount;
-        if (ach.id.startsWith('rich')) currentProgress = resellerState.balance;
-
-        let isCompleted = currentProgress >= ach.target;
-        let isClaimed = resellerState.claimedAchievements.includes(ach.id);
+    dailyQuestsList.forEach(q => {
+        let currentProgress = resellerState.dailyQuests.progress[q.id] || 0;
+        let isCompleted = currentProgress >= q.target;
+        let isClaimed = resellerState.dailyQuests.claimed.includes(q.id);
 
         let statusBtn = '';
         if (isClaimed) {
             statusBtn = `<span style="font-size: 11px; color: #34c759; font-weight: 700;">Получено ✓</span>`;
         } else if (isCompleted) {
-            statusBtn = `<button style="background:#34c759; color:white; border:none; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;" onclick="claimAchievement('${ach.id}', ${ach.reward})">Забрать +${ach.reward} BYN</button>`;
+            statusBtn = `<button style="background:#34c759; color:white; border:none; padding:5px 10px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;" onclick="claimDailyQuest('${q.id}', ${q.reward})">Забрать +${q.reward} BYN</button>`;
         } else {
-            statusBtn = `<span style="font-size: 11px; color: var(--text-muted);">${currentProgress}/${ach.target}</span>`;
+            statusBtn = `<span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">${currentProgress}/${q.target}</span>`;
         }
 
         html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--btn-secondary-bg); padding: 8px 10px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--btn-secondary-bg); padding: 8px 12px; border-radius: 10px;">
                 <div>
-                    <div style="font-size: 13px; font-weight: 700;">${ach.title}</div>
-                    <div style="font-size: 11px; color: var(--text-muted);">${ach.desc}</div>
+                    <div style="font-size: 13px; font-weight: 700;">${q.title}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">${q.desc}</div>
                 </div>
                 <div>${statusBtn}</div>
             </div>
@@ -2405,10 +2461,10 @@ function renderAchievementsWidget() {
     achContainer.innerHTML = html;
 }
 
-window.claimAchievement = function(achId, rewardAmount) {
-    if (resellerState.claimedAchievements.includes(achId)) return;
+window.claimDailyQuest = function(questId, rewardAmount) {
+    if (resellerState.dailyQuests.claimed.includes(questId)) return;
 
-    resellerState.claimedAchievements.push(achId);
+    resellerState.dailyQuests.claimed.push(questId);
     resellerState.balance += rewardAmount;
     triggerHaptic('success');
     saveResellerState();
@@ -2519,6 +2575,7 @@ function spawnResellerLot() {
 
         document.getElementById('reseller-skip-btn').onclick = () => {
             clearInterval(resellerTimerInterval);
+            checkDailyQuestProgress('skip_3', 1);
             triggerHaptic('light');
             spawnResellerLot();
         };
@@ -2561,7 +2618,13 @@ function startResellerTimer(seconds) {
 }
 
 window.resetResellerGame = function() {
-    resellerState = { balance: 500, dealsCount: 0, inventory: [], warehouseLevel: 0, claimedAchievements: [] };
+    resellerState = { 
+        balance: 500, 
+        dealsCount: 0, 
+        inventory: [], 
+        warehouseLevel: 0, 
+        dailyQuests: { lastResetTime: Date.now(), progress: { sell_2: 0, clean_1: 0, skip_3: 0 }, claimed: [] } 
+    };
     saveResellerState();
     location.reload();
 };
@@ -2620,6 +2683,9 @@ window.cleanResellerItem = function(index, cost) {
     item.buyPrice += cost; 
     item.fixedSellPrice = Math.floor(item.fixedSellPrice * 1.35); 
     
+    // Учет в квестах: химчистка
+    checkDailyQuestProgress('clean_1', 1);
+
     triggerHaptic('success');
     saveResellerState();
     renderResellerInventory();
@@ -2630,6 +2696,10 @@ window.sellResellerItem = function(index, sellPrice) {
     const item = resellerState.inventory.splice(index, 1)[0];
     resellerState.balance += sellPrice;
     resellerState.dealsCount++;
+    
+    // Учет в квестах: продажа товара
+    checkDailyQuestProgress('sell_2', 1);
+
     triggerHaptic('success');
     saveResellerState();
     renderResellerInventory();
