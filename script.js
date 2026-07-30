@@ -54,7 +54,17 @@ let currentUser = JSON.parse(localStorage.getItem('my_marketplace_user')) || nul
 let favorites = currentUser ? (JSON.parse(localStorage.getItem(`favs_${currentUser.username}`)) || []) : [];
 
 let currentCategory = 'all';
-let currentCityFilter = 'all';
+
+// Состояние расширенных фильтров
+let currentFilters = {
+    city: 'all',
+    sort: 'default',
+    priceMin: '',
+    priceMax: '',
+    size: '',
+    minRating: 0
+};
+
 let editingProductId = null;
 let currentImageIndex = 0;
 let currentProductImages = [];
@@ -71,7 +81,6 @@ function hideLoader() {
     }
 }
 
-// === ФУНКЦИИ ПОЛНОЭКРАННОГО ЗУМА ФОТО ===
 window.openFullscreenZoom = function() {
     triggerHaptic('light');
     const currentImgSrc = currentProductImages[currentImageIndex];
@@ -1148,9 +1157,10 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
 }
 
+// === УМНАЯ ФИЛЬТРАЦИЯ И СОРТИРОВКА ===
 function filterAndRender() {
     const searchInput = document.querySelector('.search-input');
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -1167,10 +1177,55 @@ function filterAndRender() {
             matchesCat = product.category === currentCategory;
         }
 
-        let matchesCity = currentCityFilter === 'all' || (product.city || 'Минск') === currentCityFilter;
+        // Фильтр по городу
+        let matchesCity = currentFilters.city === 'all' || (product.city || 'Минск') === currentFilters.city;
 
-        return matchesQuery && matchesCat && matchesCity;
+        // Фильтр по минимальной цене
+        let rawPriceNum = parseFloat((product.price || '0').replace(/[^\d.]/g, '')) || 0;
+        let matchesPriceMin = currentFilters.priceMin === '' || rawPriceNum >= parseFloat(currentFilters.priceMin);
+        
+        // Фильтр по максимальной цене
+        let matchesPriceMax = currentFilters.priceMax === '' || rawPriceNum <= parseFloat(currentFilters.priceMax);
+
+        // Фильтр по размеру (если задан)
+        let matchesSize = true;
+        if (currentFilters.size.trim() !== '') {
+            let pSize = (product.size || '').toLowerCase();
+            let targetSize = currentFilters.size.trim().toLowerCase();
+            matchesSize = pSize.includes(targetSize);
+        }
+
+        // Фильтр по рейтингу продавца
+        let matchesRating = true;
+        if (currentFilters.minRating > 0) {
+            let sellerTg = (product.telegram || '').replace('@', '').toLowerCase();
+            let sellerReviews = allReviews.filter(r => (r.sellerTelegram || '').toLowerCase() === sellerTg);
+            let avgRating = 0;
+            if (sellerReviews.length > 0) {
+                let total = 0;
+                sellerReviews.forEach(r => total += parseInt(r.stars || 5));
+                avgRating = total / sellerReviews.length;
+            }
+            matchesRating = sellerReviews.length > 0 && avgRating >= currentFilters.minRating;
+        }
+
+        return matchesQuery && matchesCat && matchesCity && matchesPriceMin && matchesPriceMax && matchesSize && matchesRating;
     });
+
+    // Сортировка
+    if (currentFilters.sort === 'asc') {
+        filtered.sort((a, b) => {
+            let priceA = parseFloat((a.price || '0').replace(/[^\d.]/g, '')) || 0;
+            let priceB = parseFloat((b.price || '0').replace(/[^\d.]/g, '')) || 0;
+            return priceA - priceB;
+        });
+    } else if (currentFilters.sort === 'desc') {
+        filtered.sort((a, b) => {
+            let priceA = parseFloat((a.price || '0').replace(/[^\d.]/g, '')) || 0;
+            let priceB = parseFloat((b.price || '0').replace(/[^\d.]/g, '')) || 0;
+            return priceB - priceA;
+        });
+    }
 
     renderProducts(filtered);
 }
@@ -1458,12 +1513,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const themeBtn = document.getElementById('theme-toggle');
     const searchInput = document.querySelector('.search-input');
-    const cityFilterSelect = document.getElementById('city-filter');
     const catBtns = document.querySelectorAll('.cat-btn');
     const navItems = document.querySelectorAll('.nav-item');
     const pTabBtns = document.querySelectorAll('.p-tab-btn');
     
     const modal = document.getElementById('modal');
+
+    // Логика модального окна фильтров
+    const filtersModal = document.getElementById('filters-modal');
+    const openFiltersBtn = document.getElementById('open-filters-btn');
+    const applyFiltersBtn = document.getElementById('apply-filters-btn');
+    const resetFiltersBtn = document.getElementById('reset-filters-btn');
+
+    if (openFiltersBtn && filtersModal) {
+        openFiltersBtn.onclick = () => {
+            triggerHaptic('light');
+            // Подтягиваем текущие значения в поля модалки
+            document.getElementById('filter-city-select').value = currentFilters.city;
+            document.getElementById('filter-sort-select').value = currentFilters.sort;
+            document.getElementById('filter-price-min').value = currentFilters.priceMin;
+            document.getElementById('filter-price-max').value = currentFilters.priceMax;
+            document.getElementById('filter-size-input').value = currentFilters.size;
+            document.getElementById('filter-rating-select').value = currentFilters.minRating;
+
+            filtersModal.classList.remove('hidden');
+        };
+    }
+
+    if (applyFiltersBtn && filtersModal) {
+        applyFiltersBtn.onclick = () => {
+            triggerHaptic('success');
+            currentFilters.city = document.getElementById('filter-city-select').value;
+            currentFilters.sort = document.getElementById('filter-sort-select').value;
+            currentFilters.priceMin = document.getElementById('filter-price-min').value.trim();
+            currentFilters.priceMax = document.getElementById('filter-price-max').value.trim();
+            currentFilters.size = document.getElementById('filter-size-input').value.trim();
+            currentFilters.minRating = parseFloat(document.getElementById('filter-rating-select').value) || 0;
+
+            filtersModal.classList.add('hidden');
+            filterAndRender();
+        };
+    }
+
+    if (resetFiltersBtn && filtersModal) {
+        resetFiltersBtn.onclick = () => {
+            triggerHaptic('warning');
+            document.getElementById('filter-city-select').value = 'all';
+            document.getElementById('filter-sort-select').value = 'default';
+            document.getElementById('filter-price-min').value = '';
+            document.getElementById('filter-price-max').value = '';
+            document.getElementById('filter-size-input').value = '';
+            document.getElementById('filter-rating-select').value = '0';
+
+            currentFilters = {
+                city: 'all',
+                sort: 'default',
+                priceMin: '',
+                priceMax: '',
+                size: '',
+                minRating: 0
+            };
+
+            filtersModal.classList.add('hidden');
+            filterAndRender();
+        };
+    }
 
     const openBtn = document.getElementById('open-modal-btn');
     const closeBtn = document.getElementById('close-modal-btn');
@@ -1481,14 +1595,6 @@ document.addEventListener('DOMContentLoaded', () => {
         categorySelectEl.addEventListener('change', (e) => {
             updateSubcategories(e.target.value);
         });
-    }
-
-    if (cityFilterSelect) {
-        cityFilterSelect.onchange = () => {
-            triggerHaptic('selection');
-            currentCityFilter = cityFilterSelect.value;
-            filterAndRender();
-        };
     }
 
     pTabBtns.forEach(btn => {
