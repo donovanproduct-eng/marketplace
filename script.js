@@ -1352,6 +1352,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const addBtn = document.getElementById('open-modal-btn');
             if (addBtn) {
+                // Показываем кнопку только на вкладке "Мои товары"
                 if (targetTab === 'tab-my-ads') {
                     addBtn.style.display = ''; 
                 } else {
