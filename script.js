@@ -71,6 +71,29 @@ function hideLoader() {
     }
 }
 
+// === ФУНКЦИИ ПОЛНОЭКРАННОГО ЗУМА ФОТО ===
+window.openFullscreenZoom = function() {
+    triggerHaptic('light');
+    const currentImgSrc = currentProductImages[currentImageIndex];
+    if (!currentImgSrc) return;
+
+    const zoomImg = document.getElementById('fullscreen-zoom-img');
+    const zoomModal = document.getElementById('fullscreen-zoom-modal');
+    
+    if (zoomImg && zoomModal) {
+        zoomImg.src = currentImgSrc;
+        zoomModal.classList.remove('hidden');
+    }
+};
+
+window.closeFullscreenZoom = function() {
+    triggerHaptic('light');
+    const zoomModal = document.getElementById('fullscreen-zoom-modal');
+    if (zoomModal) {
+        zoomModal.classList.add('hidden');
+    }
+};
+
 function updateRatingUI(reviewsArray, scoreId, starsId, countId) {
     const scoreEl = document.getElementById(scoreId);
     const starsEl = document.getElementById(starsId);
@@ -1094,7 +1117,7 @@ function openEditModal() {
     document.getElementById('telegram-input').value = product.telegram || '';
     document.getElementById('desc-input').value = product.description || '';
 
-    document.getElementById('modal').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
 }
 
 function openAddModal() {
@@ -1125,7 +1148,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('hidden');
 }
 
 function filterAndRender() {
@@ -1185,14 +1208,13 @@ function renderProducts(itemsToRender) {
     });
 }
 
-// Усиленное сжатие картинок, чтобы объявление гарантированно весило меньше 1 МБ (лимит Firestore)
 function compressImage(file, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const maxDim = 800; // Уменьшили максимальный размер для стабильности базы данных
+            const maxDim = 800;
             let width = img.width;
             let height = img.height;
 
@@ -1216,7 +1238,6 @@ function compressImage(file, callback) {
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
             
-            // Качество 0.75 дает отличный вид при очень маленьком весе файлов
             const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
             callback(compressedDataUrl);
         };
