@@ -85,7 +85,6 @@ function hideLoader() {
     }
 }
 
-// Функция для скрытия клавиатуры
 window.dismissKeyboard = function() {
     const searchInput = document.querySelector('.search-input');
     const overlay = document.getElementById('keyboard-overlay');
@@ -1252,11 +1251,10 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    // ИСПРАВЛЕНО: убран неправильный класс hidden, теперь модалка открывается
     document.getElementById('modal').classList.remove('hidden');
 }
 
-// === РЕНДЕР ИСТОРИИ И ТЕГОВ ПОИСКА ===
+// === РЕНДЕР ИСТОРИИ ПОИСКА (СОХРАНЯЕМ ТОЛЬКО ПО ENTER ИЛИ КЛИКУ) ===
 function renderSearchTags() {
     const container = document.getElementById('search-tags-container');
     if (!container) return;
@@ -1294,10 +1292,6 @@ function addSearchHistory(query) {
 function filterAndRender() {
     const searchInput = document.querySelector('.search-input');
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-
-    if (query.length >= 2) {
-        addSearchHistory(searchInput.value.trim());
-    }
 
     const filtered = products.filter(product => {
         const matchesQuery = product.title.toLowerCase().includes(query);
@@ -1686,8 +1680,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Сохраняем в историю ТОЛЬКО при нажатии Enter/Поиск
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
+                const query = searchInput.value.trim();
+                if (query.length >= 2) {
+                    addSearchHistory(query);
+                }
                 dismissKeyboard();
             }
         });
