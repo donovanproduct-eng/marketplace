@@ -93,14 +93,14 @@
                 <div id="user-tg-tag" class="profile-username">@username</div>
                 
                 <!-- Описание О себе -->
-                <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; display: none;"></p>
+                <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; margin-bottom: 8px; display: none;"></p>
 
                 <div id="profile-badge" class="profile-badge unverified">❌ Профиль не подтвержден</div>
                 
-                <!-- ИСПРАВЛЕННЫЕ Кнопки управления профилем (без рамок, рабочие функции) -->
-                <div style="display: flex; gap: 10px; margin-top: 12px;">
-                    <button id="open-verify-btn" class="btn-secondary" onclick="openVerifyModal()" style="flex: 1; font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 10px;">Верификация</button>
-                    <button id="open-edit-profile-btn" class="btn-secondary" onclick="openSettingsModal()" style="flex: 1; font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 10px;">⚙️ Настройки</button>
+                <!-- Кнопки управления профилем (подняты выше и отцентрованы) -->
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 4px;">
+                    <button id="open-verify-btn" class="btn-secondary" onclick="openVerifyModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 8px 16px;">Верификация</button>
+                    <button id="open-edit-profile-btn" class="btn-secondary" onclick="openSettingsModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 8px 16px;">⚙️ Настройки</button>
                 </div>
 
                 <div class="rating-box">
@@ -177,7 +177,6 @@
             <textarea id="edit-bio-input" placeholder="Расскажите о себе (например: продаю только оригинальные вещи)..." rows="3" class="auth-input" style="margin-bottom: 15px; resize: none;"></textarea>
 
             <div class="modal-buttons" style="display: flex; gap: 10px;">
-                <!-- Убрал белые рамки -->
                 <button id="close-edit-profile-btn" class="btn-secondary" style="flex:1; border: none; outline: none;">Отмена</button>
                 <button id="save-profile-btn" class="btn-primary" style="flex:1; border: none; outline: none;">Сохранить</button>
             </div>
@@ -249,7 +248,7 @@
                 <option value="Другое" selected>📦 Другое</option>
             </select>
 
-            <!-- НОВЫЙ БЛОК: Выбор подкатегории (по умолчанию скрыт) -->
+            <!-- Выбор подкатегории (по умолчанию скрыт) -->
             <div id="subcategory-container" style="display: none; margin-bottom: 12px;">
                 <select id="subcategory-select" class="select-input"></select>
             </div>
@@ -272,7 +271,6 @@
             <div id="file-name" class="file-name">Файлы не выбраны</div>
 
             <div class="modal-buttons">
-                <!-- Убрал белые рамки -->
                 <button id="close-modal-btn" class="btn-secondary" style="border: none; outline: none;">Отмена</button>
                 <button id="save-btn" class="btn-primary" style="border: none; outline: none;">Опубликовать</button>
             </div>
@@ -369,7 +367,6 @@
             <input type="tel" id="manual-phone-input" class="auth-input" placeholder="+375 (29) 123-45-67" style="margin-bottom: 12px;">
             <button id="save-manual-phone-btn" class="auth-btn" style="margin-bottom: 12px; border: none; outline: none;">Сохранить номер</button>
             
-            <!-- Убрал белую рамку в кнопке отмены верификации -->
             <button id="close-verify-modal-btn" class="btn-secondary" style="width:100%; border: none; outline: none;">Отмена</button>
         </div>
     </div>
