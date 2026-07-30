@@ -268,10 +268,12 @@ body {
 .cat-btn.active { background-color: #007aff; color: white; }
 .fav-cat-btn.active { background-color: #ff3b30; color: white; }
 
+/* === ОПТИМИЗАЦИЯ ДЛЯ БОЛЬШОГО КОЛИЧЕСТВА КАРТОЧЕК === */
 .products-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+    contain: layout style;
 }
 
 .product-card {
@@ -284,6 +286,16 @@ body {
     position: relative;
     cursor: pointer;
     border: 1px solid var(--border-color);
+    content-visibility: auto;
+    contain-intrinsic-size: 220px;
+}
+
+.load-more-spinner {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
 }
 
 .delete-btn {
