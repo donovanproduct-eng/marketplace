@@ -35,6 +35,8 @@ const shoeSizes = [
     "40", "40.5", "41", "41.5", "42", "42.5", "43", "43.5", "44", "44.5", "45", "45.5", "46"
 ];
 
+const standardCities = ["Минск", "Гродно", "Брест", "Гомель", "Витебск", "Могилев"];
+
 function triggerHaptic(type = 'light') {
     if (!tg?.HapticFeedback) return;
     if (type === 'light' || type === 'medium' || type === 'heavy') {
@@ -254,7 +256,6 @@ function listenFirebasePurchases() {
       });
 }
 
-// Засчитываем просмотр только 1 раз для каждого уникального пользователя
 async function logProductView(productId) {
     if (!currentUser || !currentUser.username) return;
 
@@ -262,12 +263,11 @@ async function logProductView(productId) {
     if (!product) return;
     let pTg = (product.telegram || '').replace('@', '').toLowerCase();
     let myTg = (currentUser.username || '').toLowerCase();
-    if (pTg === myTg) return; // Свои просмотры не считаем
+    if (pTg === myTg) return;
 
     try {
-        // Проверяем, смотрел ли этот юзер этот товар ранее
         const existingView = allProductViews.find(v => v.productId === productId && v.viewerUsername === currentUser.username);
-        if (existingView) return; // Уже смотрел, повторно не засчитываем
+        if (existingView) return;
 
         await db.collection("productViews").add({
             productId: productId,
@@ -1190,7 +1190,20 @@ function openEditModal() {
     
     updateSubcategories(catVal, product.subcategory || '', product.size || '');
 
-    document.getElementById('city-select').value = product.city || 'Минск';
+    // Обработка города при редактировании
+    const citySelect = document.getElementById('city-select');
+    const customCityInput = document.getElementById('custom-city-input');
+    
+    if (standardCities.includes(product.city)) {
+        citySelect.value = product.city;
+        customCityInput.classList.add('hidden');
+        customCityInput.value = '';
+    } else {
+        citySelect.value = 'custom';
+        customCityInput.classList.remove('hidden');
+        customCityInput.value = product.city || '';
+    }
+
     document.getElementById('seller-input').value = product.seller || '';
     document.getElementById('telegram-input').value = product.telegram || '';
     document.getElementById('desc-input').value = product.description || '';
@@ -1212,7 +1225,11 @@ function openAddModal() {
     document.getElementById('category-select').value = 'Другое';
     updateSubcategories('Другое'); 
 
-    document.getElementById('city-select').value = 'Минск';
+    const citySelect = document.getElementById('city-select');
+    const customCityInput = document.getElementById('custom-city-input');
+    citySelect.value = 'Минск';
+    customCityInput.classList.add('hidden');
+    customCityInput.value = '';
     
     if (currentUser) {
         document.getElementById('seller-input').value = currentUser.name || '';
@@ -1596,6 +1613,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const modal = document.getElementById('modal');
 
+    // Логика выбора города (появление кастомного инпута)
+    const citySelect = document.getElementById('city-select');
+    const customCityInput = document.getElementById('custom-city-input');
+    if (citySelect && customCityInput) {
+        citySelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                customCityInput.classList.remove('hidden');
+                customCityInput.focus();
+            } else {
+                customCityInput.classList.add('hidden');
+                customCityInput.value = '';
+            }
+        });
+    }
+
     // Логика модального окна фильтров
     const filtersModal = document.getElementById('filters-modal');
     const openFiltersBtn = document.getElementById('open-filters-btn');
@@ -1782,7 +1814,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const sizeContainer = document.getElementById('size-container');
             const sizeVal = sizeContainer.style.display === 'block' ? document.getElementById('size-select').value : '';
 
-            const citySelect = document.getElementById('city-select');
+            // Определяем город (из селекта или кастомный ввод)
+            const citySelectVal = document.getElementById('city-select').value;
+            const customCityVal = document.getElementById('custom-city-input').value.trim();
+            const finalCity = (citySelectVal === 'custom') ? (customCityVal || 'Минск') : citySelectVal;
+
             const sellerInput = document.getElementById('seller-input');
             const telegramInput = document.getElementById('telegram-input');
             const descInput = document.getElementById('desc-input');
@@ -1808,7 +1844,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     category: categorySelect.value || 'Другое',
                     subcategory: subcategoryVal || '',
                     size: sizeVal || '',
-                    city: citySelect.value || 'Минск',
+                    city: finalCity,
                     seller: sellerInput.value.trim() || 'Частное лицо',
                     telegram: telegramInput.value.trim() || '',
                     description: descInput.value.trim() || '',
