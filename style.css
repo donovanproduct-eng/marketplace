@@ -884,10 +884,10 @@ body {
 
 .reseller-img {
     width: 100%;
-    height: 200px;
-    object-fit: cover;
+    height: 225px;
+    object-fit: contain;
+    background-color: var(--bg-color);
     border-radius: 12px;
-    background-color: var(--border-color);
     margin-bottom: 12px;
 }
 
@@ -964,8 +964,9 @@ body {
 
 .reseller-item-img {
     width: 100%;
-    height: 100px;
-    object-fit: cover;
+    height: 110px;
+    object-fit: contain;
+    background-color: var(--bg-color);
     border-radius: 8px;
     margin-bottom: 6px;
 }
