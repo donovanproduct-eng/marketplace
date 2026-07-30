@@ -658,31 +658,33 @@ body {
     display: flex; 
     gap: 6px; 
     margin-bottom: 8px; 
-    align-items: stretch; /* Растягиваем дочерние элементы по высоте контейнера */
+    align-items: center; /* Центрируем блоки по вертикали */
 }
 
 .view-category-badge {
-    flex: 1; /* Левый блок занимает всё свободное пространство */
+    flex: 1; 
     display: flex;
     align-items: center;
     font-size: 12px;
     font-weight: 700;
     color: var(--text-muted);
     background: var(--btn-secondary-bg);
-    padding: 8px 10px;
+    padding: 10px 12px;
     border-radius: 6px;
     line-height: 1.3;
 }
 
 .view-city-badge {
     display: flex;
-    align-items: center; /* Строгое вертикальное центрирование текста «Гомель» / «Минск» */
+    align-items: center; 
     justify-content: center;
     font-size: 12px;
     font-weight: 700;
     color: #007aff;
     background: var(--btn-secondary-bg);
-    padding: 8px 14px;
+    padding: 0 16px; /* Фиксированные отступы по бокам */
+    height: 100%; /* Растягиваем на полную высоту родителя (.view-badges) */
+    min-height: 38px; /* Согласуем минимальную высоту с левым блоком */
     border-radius: 6px;
     white-space: nowrap;
 }
