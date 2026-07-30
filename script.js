@@ -29,9 +29,12 @@ const subcategoriesMap = {
     "Другое": [] 
 };
 
-// Размеры для одежды и обуви
+// Размеры для одежды и обуви (с половинчатыми размерами для обуви)
 const clothingSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "Оверсайз / Универсальный"];
-const shoeSizes = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
+const shoeSizes = [
+    "35", "35.5", "36", "36.5", "37", "37.5", "38", "38.5", "39", "39.5", 
+    "40", "40.5", "41", "41.5", "42", "42.5", "43", "43.5", "44", "44.5", "45", "45.5", "46"
+];
 
 function triggerHaptic(type = 'light') {
     if (!tg?.HapticFeedback) return;
@@ -129,7 +132,7 @@ function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSi
         subContainer.style.display = 'none';
     }
 
-    // 2. Обработка размеров (показываем только для Одежды и Обуви)
+    // 2. Обработка размеров (Одежда / Обувь)
     if (categoryValue === "Одежда" || categoryValue === "Обувь") {
         sizeSelect.innerHTML = '';
         let targetSizes = (categoryValue === "Одежда") ? clothingSizes : shoeSizes;
@@ -1079,7 +1082,7 @@ function openEditModal() {
     document.getElementById('modal-title').textContent = 'Редактировать объявление';
     document.getElementById('save-btn').textContent = 'Сохранить';
 
-    document.getElementById('title-input').value = product.title;
+    document.getElementById('title-input').value = product.title || '';
     
     let savedPrice = product.price || '';
     let numPart = savedPrice.replace(/[^\d.,]/g, '').trim(); 
@@ -1088,8 +1091,10 @@ function openEditModal() {
     document.getElementById('price-input').value = numPart;
     document.getElementById('currency-select').value = currPart;
 
-    document.getElementById('category-select').value = product.category || 'Другое';
-    updateSubcategories(product.category || 'Другое', product.subcategory || '', product.size || '');
+    const catVal = product.category || 'Другое';
+    document.getElementById('category-select').value = catVal;
+    
+    updateSubcategories(catVal, product.subcategory || '', product.size || '');
 
     document.getElementById('city-select').value = product.city || 'Минск';
     document.getElementById('seller-input').value = product.seller || '';
@@ -1455,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevImgBtn = document.getElementById('prev-img-btn');
     const nextImgBtn = document.getElementById('next-img-btn');
 
-    // === СЛУШАТЕЛЬ ВЫБОРА КАТЕГОРИИ ===
+    // Слушатель выбора основной категории
     const categorySelectEl = document.getElementById('category-select');
     if (categorySelectEl) {
         categorySelectEl.addEventListener('change', (e) => {
@@ -1599,13 +1604,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const productData = {
                     title: titleInput.value.trim(),
                     price: finalPrice,
-                    category: categorySelect.value,
-                    subcategory: subcategoryVal,
-                    size: sizeVal,
-                    city: citySelect.value,
+                    category: categorySelect.value || 'Другое',
+                    subcategory: subcategoryVal || '',
+                    size: sizeVal || '',
+                    city: citySelect.value || 'Минск',
                     seller: sellerInput.value.trim() || 'Частное лицо',
-                    telegram: telegramInput.value.trim(),
-                    description: descInput.value.trim(),
+                    telegram: telegramInput.value.trim() || '',
+                    description: descInput.value.trim() || '',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
