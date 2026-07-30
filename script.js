@@ -365,11 +365,11 @@ function checkAuth() {
         listenFirebasePurchases();
         checkPendingReviewRequests();
 
-        // Проверяем текущую активную вкладку и показываем кнопку плюс, если мы на вкладке «Мои товары»
+        // Показываем кнопку добавления, если открыта вкладка «Мои товары»
         const activeNav = document.querySelector('.nav-item.active');
         const addBtn = document.getElementById('open-modal-btn');
         if (activeNav && activeNav.dataset.tab === 'tab-my-ads' && addBtn) {
-            addBtn.style.display = '';
+            addBtn.classList.remove('hidden');
         }
     } else {
         authScreen.classList.remove('hidden');
@@ -1164,7 +1164,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
 }
 
 // === УМНАЯ ФИЛЬТРАЦИЯ И СОРТИРОВКА ===
@@ -1639,9 +1639,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const addBtn = document.getElementById('open-modal-btn');
             if (addBtn) {
                 if (targetTab === 'tab-my-ads') {
-                    addBtn.style.display = ''; 
+                    addBtn.classList.remove('hidden'); 
                 } else {
-                    addBtn.style.display = 'none'; 
+                    addBtn.classList.add('hidden'); 
                 }
             }
 
