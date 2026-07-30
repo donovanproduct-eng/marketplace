@@ -67,6 +67,31 @@ function hideLoader() {
     }
 }
 
+// === Глобальные функции для кнопок профиля (чтобы работали 100%) ===
+window.openSettingsModal = function() {
+    triggerHaptic('light');
+    document.getElementById('edit-name-input').value = currentUser.name || '';
+    document.getElementById('edit-bio-input').value = currentUser.bio || '';
+    
+    const editAvatarPreview = document.getElementById('edit-avatar-preview');
+    if (currentUser.customAvatar) {
+        editAvatarPreview.innerHTML = `<img src="${currentUser.customAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
+    } else if (currentUser.photoUrl) {
+        editAvatarPreview.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+    } else {
+        editAvatarPreview.innerHTML = '👤';
+    }
+    
+    tempAvatarBase64 = null;
+    document.getElementById('edit-profile-modal').classList.remove('hidden');
+};
+
+window.openVerifyModal = function() {
+    triggerHaptic('light');
+    document.getElementById('verify-modal').classList.remove('hidden');
+};
+
+
 // Универсальная функция подсчета рейтинга
 function updateRatingUI(reviewsArray, scoreId, starsId, countId) {
     const scoreEl = document.getElementById(scoreId);
@@ -724,7 +749,6 @@ function renderProfile() {
     const tgEl = document.getElementById('user-tg-tag');
     const avatarEl = document.getElementById('user-avatar');
     const bioEl = document.getElementById('profile-bio');
-
     const badgeEl = document.getElementById('profile-badge');
     const openVerifyBtn = document.getElementById('open-verify-btn');
 
@@ -747,11 +771,11 @@ function renderProfile() {
     if (currentUser.isVerified) {
         badgeEl.textContent = '✓ Профиль подтверждён';
         badgeEl.className = 'profile-badge verified';
-        if (openVerifyBtn) openVerifyBtn.classList.add('hidden');
+        if (openVerifyBtn) openVerifyBtn.style.display = 'none'; // Скрываем кнопку, если подтвержден
     } else {
         badgeEl.textContent = '❌ Профиль не подтвержден';
         badgeEl.className = 'profile-badge unverified';
-        if (openVerifyBtn) openVerifyBtn.classList.remove('hidden');
+        if (openVerifyBtn) openVerifyBtn.style.display = 'block'; // Показываем, если не подтвержден
     }
 
     document.getElementById('fav-ads-count').textContent = favorites.length;
@@ -1274,30 +1298,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
 
     // Настройки профиля
-    const openEditProfileBtn = document.getElementById('open-edit-profile-btn');
     const closeEditProfileBtn = document.getElementById('close-edit-profile-btn');
     const editProfileModal = document.getElementById('edit-profile-modal');
     const saveProfileBtn = document.getElementById('save-profile-btn');
     const avatarFileInput = document.getElementById('avatar-file-input');
     const editAvatarPreview = document.getElementById('edit-avatar-preview');
-
-    if (openEditProfileBtn) {
-        openEditProfileBtn.onclick = () => {
-            triggerHaptic('light');
-            document.getElementById('edit-name-input').value = currentUser.name || '';
-            document.getElementById('edit-bio-input').value = currentUser.bio || '';
-            
-            if (currentUser.customAvatar) {
-                editAvatarPreview.innerHTML = `<img src="${currentUser.customAvatar}">`;
-            } else if (currentUser.photoUrl) {
-                editAvatarPreview.innerHTML = `<img src="${currentUser.photoUrl}">`;
-            } else {
-                editAvatarPreview.innerHTML = '👤';
-            }
-            tempAvatarBase64 = null;
-            editProfileModal.classList.remove('hidden');
-        };
-    }
 
     if (closeEditProfileBtn) {
         closeEditProfileBtn.onclick = () => {
@@ -1358,23 +1363,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    const openVerifyBtn = document.getElementById('open-verify-btn');
-    const verifyModal = document.getElementById('verify-modal');
     const closeVerifyModalBtn = document.getElementById('close-verify-modal-btn');
     const confirmTgPhoneBtn = document.getElementById('confirm-tg-phone-btn');
     const saveManualPhoneBtn = document.getElementById('save-manual-phone-btn');
 
-    if (openVerifyBtn) {
-        openVerifyBtn.onclick = () => {
-            triggerHaptic('light');
-            verifyModal.classList.remove('hidden');
-        };
-    }
-
     if (closeVerifyModalBtn) {
         closeVerifyModalBtn.onclick = () => {
             triggerHaptic('light');
-            verifyModal.classList.add('hidden');
+            document.getElementById('verify-modal').classList.add('hidden');
         };
     }
 
@@ -1495,6 +1491,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const addBtn = document.getElementById('open-modal-btn');
             if (addBtn) {
+                // Показываем кнопку только на вкладке "Мои товары"
                 if (targetTab === 'tab-my-ads') {
                     addBtn.style.display = ''; 
                 } else {
