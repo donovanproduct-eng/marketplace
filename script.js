@@ -20,10 +20,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// === ЗВУКОВЫЕ ЭФФЕКТЫ ЧЕРЕЗ WEB AUDIO API ===
+// === ЗВУКОВЫЕ ЭФФЕКТЫ ЧЕРЕЗ WEB AUDIO API (ТОЛЬКО В РЕСЕЛЛЕРЕ) ===
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
+    // Проверяем, открыта ли вкладка реселлера. Если нет — не играем звук.
+    const resellerTab = document.getElementById('tab-reseller');
+    if (!resellerTab || resellerTab.classList.contains('hidden')) {
+        return;
+    }
+
     if (!audioCtx) return;
     if (audioCtx.state === 'suspended') {
         audioCtx.resume();
