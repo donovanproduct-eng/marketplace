@@ -77,6 +77,13 @@
                     <button class="cat-btn" data-cat="Другое">📦 Другое</button>
                 </div>
             </div>
+
+            <!-- БЛОК ДЛЯ VIP-ОБЪЯВЛЕНИЙ -->
+            <div id="vip-products-container" class="vip-section hidden">
+                <div class="vip-header">⚡ VIP Объявления</div>
+                <div id="vip-products-grid" class="products-grid"></div>
+            </div>
+
             <div id="products" class="products-grid"></div>
         </div>
 
@@ -136,13 +143,16 @@
                 <h2 id="user-name" class="profile-name">Имя Пользователя</h2>
                 <div id="user-tg-tag" class="profile-username">@username</div>
                 
-                <!-- Виджет баланса Resale Коинов -->
-                <div class="rc-balance-badge" style="margin-top: 6px;">
-                    <span class="rc-icon">🪙</span>
-                    <span id="user-rc-balance" class="rc-amount">0 RC</span>
+                <!-- ВИДЖЕТ ВАЛЮТЫ И ЕЖЕДНЕВНОГО БОНУСА -->
+                <div id="coins-widget-container" class="user-coins-card">
+                    <div class="coins-balance-box">
+                        <span>Баланс:</span>
+                        <span id="user-coins-count" class="coins-val">💎 0</span>
+                    </div>
+                    <button id="daily-bonus-btn" class="daily-bonus-btn" onclick="claimDailyBonus()">🎁 Бонус +25 💎</button>
                 </div>
 
-                <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 8px; margin-bottom: 4px; display: none; width: 100%;"></p>
+                <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; margin-bottom: 4px; display: none; width: 100%;"></p>
 
                 <div id="profile-badge" class="profile-badge unverified" style="margin-top: 6px;">❌ Профиль не подтвержден</div>
                 
