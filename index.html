@@ -11,7 +11,6 @@
     <!-- Firebase SDK (v8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <!-- ДОБАВЛЕН FIREBASE STORAGE -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
     <link rel="stylesheet" href="style.css">
@@ -137,7 +136,13 @@
                 <h2 id="user-name" class="profile-name">Имя Пользователя</h2>
                 <div id="user-tg-tag" class="profile-username">@username</div>
                 
-                <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; margin-bottom: 4px; display: none; width: 100%;"></p>
+                <!-- Виджет баланса Resale Коинов -->
+                <div class="rc-balance-badge" style="margin-top: 6px;">
+                    <span class="rc-icon">🪙</span>
+                    <span id="user-rc-balance" class="rc-amount">0 RC</span>
+                </div>
+
+                <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 8px; margin-bottom: 4px; display: none; width: 100%;"></p>
 
                 <div id="profile-badge" class="profile-badge unverified" style="margin-top: 6px;">❌ Профиль не подтвержден</div>
                 
