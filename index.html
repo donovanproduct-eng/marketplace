@@ -53,7 +53,7 @@
     <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
     <div id="app" class="hidden">
         
-        <!-- Вкладка: Все объявления -->
+        <!-- Вкладка 1: Все объявления -->
         <div id="tab-home" class="tab-content">
             <div class="header">
                 <div class="search-row">
@@ -79,13 +79,56 @@
             <div id="products" class="products-grid"></div>
         </div>
 
-        <!-- Вкладка: Мои товары -->
+        <!-- Вкладка 2: Мои товары -->
         <div id="tab-my-ads" class="tab-content hidden">
             <h2 style="margin-top:0; font-size: 20px;">Мои объявления</h2>
             <div id="my-products-tab-grid" class="products-grid"></div>
         </div>
 
-        <!-- Вкладка: Мой Профиль -->
+        <!-- Вкладка 3: Симулятор реселлера (Новая!) -->
+        <div id="tab-reseller" class="tab-content hidden">
+            <div class="reseller-header">
+                <div class="reseller-balance-card">
+                    <span style="font-size: 12px; color: var(--text-muted);">Ваш баланс:</span>
+                    <div id="reseller-balance" class="reseller-balance-val">500 BYN</div>
+                </div>
+                <div class="reseller-stats">
+                    <span>Сделок: <b id="reseller-deals-count">0</b></span>
+                </div>
+            </div>
+
+            <!-- Игровой блок поиска лотов -->
+            <div id="reseller-game-area">
+                <div id="reseller-lot-card" class="reseller-card">
+                    <div id="reseller-timer-bar" class="reseller-timer-bar"></div>
+                    <img id="reseller-lot-img" class="reseller-img" src="" alt="Лот">
+                    <div id="reseller-lot-title" class="reseller-title">Загрузка лота...</div>
+                    <div id="reseller-lot-desc" class="reseller-desc">Описание продавца...</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Цена выкупа:</div>
+                            <div id="reseller-lot-price" class="reseller-price">0 BYN</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Оценка рынка:</div>
+                            <div id="reseller-lot-market" style="font-size: 14px; font-weight: 700; color: #34c759;">~0 BYN</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="reseller-skip-btn" class="btn-secondary" style="flex: 1; border: none; outline: none;">Пропустить</button>
+                        <button id="reseller-buy-btn" class="btn-primary" style="flex: 1.5; border: none; outline: none;">Купить лот</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Склад купленных вещей -->
+            <h3 style="font-size: 16px; margin: 20px 0 10px 0;">Мой склад шмоток</h3>
+            <div id="reseller-inventory" class="reseller-inventory-grid">
+                <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">Склад пуст. Купите что-нибудь выгодно!</div>
+            </div>
+        </div>
+
+        <!-- Вкладка 4: Мой Профиль -->
         <div id="tab-profile" class="tab-content hidden" style="padding-bottom: 50px;">
             <div class="profile-card" style="display: flex; flex-direction: column; align-items: center;">
                 <div id="user-avatar" class="profile-avatar">👤</div>
@@ -140,7 +183,7 @@
             <button id="logout-btn" class="logout-btn" style="width:100%; margin-top:25px; margin-bottom: 20px; border: none; outline: none;">Выйти из аккаунта</button>
         </div>
 
-        <!-- Нижняя навигация -->
+        <!-- Нижняя навигация (теперь 4 кнопки) -->
         <nav class="bottom-nav">
             <button class="nav-item active" data-tab="tab-home">
                 <span class="nav-icon">🛍️</span>
@@ -149,6 +192,10 @@
             <button class="nav-item" data-tab="tab-my-ads">
                 <span class="nav-icon">📦</span>
                 <span>Мои товары</span>
+            </button>
+            <button class="nav-item" data-tab="tab-reseller">
+                <span class="nav-icon">📈</span>
+                <span>Реселлер</span>
             </button>
             <button class="nav-item" data-tab="tab-profile">
                 <span class="nav-icon">👤</span>
