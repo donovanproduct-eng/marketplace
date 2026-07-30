@@ -74,7 +74,6 @@ function listenFirebaseProducts() {
           
           if (window.currentOpenedSellerTg) {
               renderPublicProfileProducts(window.currentOpenedSellerTg);
-              renderPublicProfileReviews(window.currentOpenedSellerTg);
           }
 
           hideLoader();
@@ -455,7 +454,7 @@ function closeViewModal() {
     }
 }
 
-// Открытие профиля продавца с сохранением контекста
+// Открытие профиля продавца
 window.openActiveSellerProfile = function() {
     triggerHaptic('light');
     
@@ -474,6 +473,7 @@ window.openActiveSellerProfile = function() {
         pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
     }
 
+    // Жестко сбрасываем вкладки на "Товары" при открытии
     const pubTabAds = document.getElementById('pub-tab-ads');
     const pubTabReviews = document.getElementById('pub-tab-reviews');
     const pubSecAds = document.getElementById('pub-sec-ads');
@@ -482,8 +482,9 @@ window.openActiveSellerProfile = function() {
     if (pubTabAds && pubTabReviews && pubSecAds && pubSecReviews) {
         pubTabAds.classList.add('active');
         pubTabReviews.classList.remove('active');
-        pubSecAds.classList.remove('hidden');
-        pubSecReviews.classList.add('hidden');
+        
+        pubSecAds.style.display = 'block';
+        pubSecReviews.style.display = 'none';
     }
 
     renderPublicProfileProducts(targetTg);
@@ -1071,9 +1072,39 @@ document.addEventListener('DOMContentLoaded', () => {
         closePublicProfileBtn.onclick = () => {
             triggerHaptic('light');
             publicProfileModal.classList.add('hidden');
-            window.currentOpenedSellerTg = null;
+            window.currentOpenedSellerTg = null; 
             document.getElementById('view-modal').classList.remove('hidden');
         };
+    }
+
+    // Железобетонное переключение вкладок в публичном профиле
+    const pubTabAds = document.getElementById('pub-tab-ads');
+    const pubTabReviews = document.getElementById('pub-tab-reviews');
+    const pubSecAds = document.getElementById('pub-sec-ads');
+    const pubSecReviews = document.getElementById('pub-sec-reviews');
+
+    if (pubTabAds && pubTabReviews && pubSecAds && pubSecReviews) {
+        pubTabAds.addEventListener('click', (e) => {
+            e.preventDefault();
+            triggerHaptic('selection');
+            pubTabAds.classList.add('active');
+            pubTabReviews.classList.remove('active');
+            
+            // Прямое управление стилями для 100% надежности
+            pubSecAds.style.display = 'block';
+            pubSecReviews.style.display = 'none';
+        });
+
+        pubTabReviews.addEventListener('click', (e) => {
+            e.preventDefault();
+            triggerHaptic('selection');
+            pubTabReviews.classList.add('active');
+            pubTabAds.classList.remove('active');
+            
+            // Прямое управление стилями
+            pubSecReviews.style.display = 'block';
+            pubSecAds.style.display = 'none';
+        });
     }
 
     const tgLoginBtn = document.getElementById('tg-login-btn');
