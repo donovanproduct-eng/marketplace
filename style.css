@@ -52,6 +52,105 @@ body {
     overflow-x: hidden;
 }
 
+/* === ВИДЖЕТ ВАЛЮТЫ И ЕЖЕДНЕВНОГО БОНУСА === */
+.user-coins-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(0, 122, 255, 0.05));
+    border: 1px solid rgba(0, 122, 255, 0.2);
+    border-radius: 12px;
+    padding: 10px 14px;
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 6px;
+}
+
+.coins-balance-box {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.coins-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: #007aff;
+    margin-top: 2px;
+}
+
+.daily-bonus-btn {
+    background: #007aff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.daily-bonus-btn:active {
+    transform: scale(0.95);
+}
+
+/* === СТИЛИ ПРОДВИНУТЫХ КАРТОЧЕК (VIP И ВЫДЕЛЕННЫЕ) === */
+.highlighted-card {
+    border: 1.5px solid #007aff !important;
+    box-shadow: 0 0 12px rgba(0, 122, 255, 0.25) !important;
+}
+
+.vip-card {
+    border: 1.5px solid #ff9500 !important;
+    box-shadow: 0 0 14px rgba(255, 149, 0, 0.3) !important;
+    background: linear-gradient(180deg, var(--card-bg), rgba(255, 149, 0, 0.03)) !important;
+}
+
+.vip-section {
+    margin-bottom: 16px;
+}
+
+.vip-header {
+    font-size: 14px;
+    font-weight: 800;
+    color: #ff9500;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vip-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, #ff9500, #ff5e00);
+    color: white;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 6px;
+    border-radius: 6px;
+    z-index: 3;
+    letter-spacing: 0.5px;
+}
+
+.top-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, #007aff, #005ec4);
+    color: white;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 6px;
+    border-radius: 6px;
+    z-index: 3;
+    letter-spacing: 0.5px;
+}
+
 .keyboard-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -768,7 +867,7 @@ body {
 .view-price { font-size: 24px; font-weight: 800; color: #007aff; margin-bottom: 4px; }
 .view-title { font-size: 18px; font-weight: 700; margin: 0 0 16px 0; }
 
-/* === КАРТОЧКА И АВААТАРКА ПРОДАВЦА === */
+/* === КАРТОЧКА И АВАТАРКА ПРОДАВЦА === */
 .seller-card {
     display: flex;
     align-items: center;
