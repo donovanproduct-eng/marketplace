@@ -53,19 +53,13 @@
         <!-- Вкладка: Все объявления -->
         <div id="tab-home" class="tab-content">
             <div class="header">
+                <!-- Строка поиска на всю ширину + кнопка фильтров и смены темы -->
                 <div class="search-row">
                     <input type="text" class="search-input" placeholder="Поиск товаров...">
-                    <select id="city-filter" class="city-select">
-                        <option value="all">📍 Все города</option>
-                        <option value="Минск">Минск</option>
-                        <option value="Гродно">Гродно</option>
-                        <option value="Брест">Брест</option>
-                        <option value="Гомель">Гомель</option>
-                        <option value="Витебск">Витебск</option>
-                        <option value="Могилев">Могилев</option>
-                    </select>
+                    <button id="open-filters-btn" class="theme-btn" style="border: none; outline: none;" title="Фильтры">⚙️</button>
                     <button id="theme-toggle" class="theme-btn" style="border: none; outline: none;">🌙</button>
                 </div>
+                <!-- Категории + Избранное -->
                 <div class="categories-bar">
                     <button class="cat-btn active" data-cat="all">Все</button>
                     <button class="cat-btn fav-cat-btn" data-cat="favorites">❤️ Избранное</button>
@@ -157,6 +151,53 @@
         </nav>
 
         <button id="open-modal-btn" class="add-btn" style="display: none; border: none; outline: none;">+</button>
+    </div>
+
+    <!-- Модальное окно: Расширенный фильтр (в стиле Avito/Kufar) -->
+    <div id="filters-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; margin-bottom: 15px;">Фильтры поиска</h2>
+            
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Город</label>
+            <select id="filter-city-select" class="select-input">
+                <option value="all">📍 Все города</option>
+                <option value="Минск">Минск</option>
+                <option value="Гродно">Гродно</option>
+                <option value="Брест">Брест</option>
+                <option value="Гомель">Гомель</option>
+                <option value="Витебск">Витебск</option>
+                <option value="Могилев">Могилев</option>
+            </select>
+
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Сортировка цены</label>
+            <select id="filter-sort-select" class="select-input">
+                <option value="default">По умолчанию (сначала новые)</option>
+                <option value="asc">Сначала дешевле</option>
+                <option value="desc">Сначала дороже</option>
+            </select>
+
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Цена (в 숫자х)</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="number" id="filter-price-min" placeholder="От" class="auth-input" style="margin-bottom: 0;">
+                <input type="number" id="filter-price-max" placeholder="До" class="auth-input" style="margin-bottom: 0;">
+            </div>
+
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Размер</label>
+            <input type="text" id="filter-size-input" placeholder="Например: M, 41.5, XXL..." class="auth-input" style="margin-bottom: 12px;">
+
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Минимальный рейтинг продавца</label>
+            <select id="filter-rating-select" class="select-input" style="margin-bottom: 20px;">
+                <любое значение value="0">Любой рейтинг</option>
+                <option value="4">⭐⭐⭐⭐ 4.0 и выше</option>
+                <option value="4.5">⭐⭐⭐⭐⭐ 4.5 и выше</option>
+                <option value="5">⭐⭐⭐⭐⭐ Только 5.0</option>
+            </select>
+
+            <div class="modal-buttons" style="display: flex; gap: 10px;">
+                <button id="reset-filters-btn" class="btn-secondary" style="flex: 1; border: none; outline: none;">Сбросить</button>
+                <button id="apply-filters-btn" class="btn-primary" style="flex: 1; border: none; outline: none;">Применить</button>
+            </div>
+        </div>
     </div>
 
     <!-- Полноэкранный просмотр фото (Лайтбокс) -->
@@ -293,7 +334,6 @@
             
             <div class="gallery-container">
                 <button id="prev-img-btn" class="gallery-nav prev-btn" style="border: none; outline: none;">‹</button>
-                <!-- Добавлен клик по картинке для зума -->
                 <img id="view-image" class="view-image" src="" alt="Товар" onclick="openFullscreenZoom()" style="cursor: zoom-in;" title="Нажмите, чтобы увеличить">
                 <button id="next-img-btn" class="gallery-nav next-btn" style="border: none; outline: none;">›</button>
                 <div id="gallery-dots" class="gallery-dots"></div>
