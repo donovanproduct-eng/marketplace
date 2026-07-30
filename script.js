@@ -520,9 +520,7 @@ function checkAuth() {
         const addBtn = document.getElementById('open-modal-btn');
         if (activeNav && addBtn) {
             if (activeNav.dataset.tab === 'tab-my-ads') {
-                addBtn.classList.remove('hidden');
-            } else {
-                addBtn.classList.add('hidden');
+                addBtn.classList.add('hidden'); // на реселлере плюс скрыт
             }
         }
     } else {
@@ -1961,7 +1959,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('filter-currency-select').value = currentFilters.currency;
             document.getElementById('filter-rating-select').value = currentFilters.minRating;
 
-            filtersModal.classList.add('hidden');
+            filtersModal.classList.remove('hidden');
         };
     }
 
@@ -2242,80 +2240,7 @@ function handleZoomSwipe() {
     }
 }
 
-// ТОЧНАЯ БАЗА С ИМЕННО ТВОИМИ ЗАГРУЖЕННЫМИ ФОТОГРАФИЯМИ ИЗ ЧАТА
-const resellerTemplates = [
-    { 
-        title: "Gucci Ski Goggles", 
-        img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300", 
-        minPrice: 200, 
-        maxPrice: 450, 
-        desc: "Оригинальные горнолыжные маски Gucci с фирменной лентой." 
-    },
-    { 
-        title: "Supreme x Stone Island Shorts", 
-        img: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=300", 
-        minPrice: 150, 
-        maxPrice: 320, 
-        desc: "Коллаборация с патчем Stone Island. Состояние отличное." 
-    },
-    { 
-        title: "BAPE STA Mid Blue", 
-        img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300", 
-        minPrice: 300, 
-        maxPrice: 750, 
-        desc: "Яркие синие кроссовки в полном комплекте." 
-    },
-    { 
-        title: "Supreme x Stone Island Hoodie", 
-        img: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300", 
-        minPrice: 250, 
-        maxPrice: 550, 
-        desc: "Легендарное худи с принтом и патчем на рукаве." 
-    },
-    { 
-        title: "Versace Medusa Biggie Belt", 
-        img: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300", 
-        minPrice: 280, 
-        maxPrice: 650, 
-        desc: "Массивный синий ремень с головой Медузы." 
-    },
-    { 
-        title: "Gosha Rubchinskiy x Fila Tee", 
-        img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300", 
-        minPrice: 80, 
-        maxPrice: 200, 
-        desc: "Коллаб с кириллической надписью. Винтаж." 
-    },
-    { 
-        title: "Reebok Pump Fury x Vetements", 
-        img: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?w=300", 
-        minPrice: 400, 
-        maxPrice: 950, 
-        desc: "Экспериментальная модель с системой Pump." 
-    },
-    { 
-        title: "Palm Angels Track Shorts", 
-        img: "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=300", 
-        minPrice: 120, 
-        maxPrice: 280, 
-        desc: "Спортивные шорты с лампасами и готическим принтом." 
-    },
-    { 
-        title: "Nike x Sacai LDWaffle", 
-        img: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=300", 
-        minPrice: 300, 
-        maxPrice: 700, 
-        desc: "Двойной дизайн и подошва. Отличный лук." 
-    },
-    { 
-        title: "Gucci Spray Print Shorts", 
-        img: "https://images.unsplash.com/photo-1516257984-b1b4d707412e?w=300", 
-        minPrice: 180, 
-        maxPrice: 400, 
-        desc: "Шорты с граффити-принтом Gucci." 
-    }
-];
-
+// === ТЕПЕРЬ СИМУЛЯТОР БЕРЕТ ТОВАРЫ ИЗ РЕАЛЬНОЙ БАЗЫ ОБЪЯВЛЕНИЙ (products) ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
@@ -2346,19 +2271,77 @@ function spawnResellerLot() {
         return;
     }
 
-    const template = resellerTemplates[Math.floor(Math.random() * resellerTemplates.length)];
-    const buyPrice = Math.floor(Math.random() * (template.maxPrice - template.minPrice) + template.minPrice);
-    const marketMultiplier = (Math.random() * 0.8 + 0.75);
-    const marketValue = Math.floor(buyPrice * marketMultiplier + (Math.random() * 50 - 20));
+    // Если в базе нет реальных товаров, показываем заглушку
+    if (!products || products.length === 0) {
+        cardArea.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Создайте хотя бы одно объявление на вкладке «Объявления», чтобы оно появилось в симуляторе!</div>`;
+        setTimeout(spawnResellerLot, 3000);
+        return;
+    }
+
+    // Берем случайный товар из реальных объявлений базы
+    const randomProduct = products[Math.floor(Math.random() * products.length)];
+    
+    // Вычисляем цену выкупа на основе цены реального товара
+    let rawPriceNum = parseFloat((randomProduct.price || '100').replace(/[^\d.]/g, '')) || 150;
+    const buyPrice = Math.max(30, Math.floor(rawPriceNum * (Math.random() * 0.4 + 0.5))); // 50-90% от цены
+    const marketMultiplier = (Math.random() * 0.6 + 0.8);
+    const marketValue = Math.max(40, Math.floor(buyPrice * marketMultiplier));
 
     currentResellerLot = {
-        id: Date.now(),
-        title: template.title,
-        img: template.img,
-        desc: template.desc,
+        id: randomProduct.id,
+        title: randomProduct.title,
+        img: randomProduct.images ? randomProduct.images[0] : 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300',
+        desc: randomProduct.description || 'Реальный товар с маркетплейса.',
         buyPrice: buyPrice,
-        marketValue: Math.max(50, marketValue)
+        marketValue: marketValue
     };
+
+    // Восстанавливаем разметку карточки лота, если там была ошибка/банкротство
+    if (!document.getElementById('reseller-lot-img')) {
+        cardArea.innerHTML = `
+            <div id="reseller-lot-card" class="reseller-card">
+                <div id="reseller-timer-bar" class="reseller-timer-bar"></div>
+                <img id="reseller-lot-img" class="reseller-img" src="" alt="Лот">
+                <div id="reseller-lot-title" class="reseller-title">Загрузка лота...</div>
+                <div id="reseller-lot-desc" class="reseller-desc">Описание продавца...</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Цена выкупа:</div>
+                        <div id="reseller-lot-price" class="reseller-price">0 BYN</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Оценка рынка:</div>
+                        <div id="reseller-lot-market" style="font-size: 14px; font-weight: 700; color: #34c759;">~0 BYN</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="reseller-skip-btn" class="reseller-btn-skip">Пропустить</button>
+                    <button id="reseller-buy-btn" class="reseller-btn-buy">Купить лот</button>
+                </div>
+            </div>`;
+        
+        // Перепривязываем обработчики кнопок
+        document.getElementById('reseller-buy-btn').onclick = () => {
+            if (!currentResellerLot) return;
+            if (resellerState.balance < currentResellerLot.buyPrice) {
+                triggerHaptic('error');
+                alert('Недостаточно средств на балансе!');
+                return;
+            }
+            clearInterval(resellerTimerInterval);
+            resellerState.balance -= currentResellerLot.buyPrice;
+            resellerState.inventory.push(currentResellerLot);
+            triggerHaptic('success');
+            saveResellerState();
+            spawnResellerLot();
+        };
+
+        document.getElementById('reseller-skip-btn').onclick = () => {
+            clearInterval(resellerTimerInterval);
+            triggerHaptic('light');
+            spawnResellerLot();
+        };
+    }
 
     const imgEl = document.getElementById('reseller-lot-img');
     const titleEl = document.getElementById('reseller-lot-title');
