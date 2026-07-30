@@ -65,7 +65,9 @@ let currentFilters = {
     priceMin: '',
     priceMax: '',
     currency: 'all',
-    size: '',
+    category: 'all',
+    subcategory: 'all',
+    size: 'all',
     minRating: 0
 };
 
@@ -212,6 +214,54 @@ function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSi
 
         if (selectedSize && targetSizes.includes(selectedSize)) {
             sizeSelect.value = selectedSize;
+        }
+        sizeContainer.style.display = 'block';
+    } else {
+        sizeSelect.innerHTML = '';
+        sizeContainer.style.display = 'none';
+    }
+}
+
+// Обновление подкатегорий и размеров для модалки фильтров
+function updateFilterSubcategories(categoryValue, selectedSub = 'all', selectedSz = 'all') {
+    const subContainer = document.getElementById('filter-subcategory-container');
+    const subSelect = document.getElementById('filter-subcategory-select');
+    
+    const sizeContainer = document.getElementById('filter-size-container');
+    const sizeSelect = document.getElementById('filter-size-select');
+    
+    const subs = subcategoriesMap[categoryValue];
+    
+    if (subs && subs.length > 0) {
+        subSelect.innerHTML = '<option value="all">Все подкатегории</option>';
+        subs.forEach(sub => {
+            const opt = document.createElement('option');
+            opt.value = sub;
+            opt.textContent = sub;
+            subSelect.appendChild(opt);
+        });
+        if (selectedSub && subs.includes(selectedSub)) {
+            subSelect.value = selectedSub;
+        }
+        subContainer.style.display = 'block';
+    } else {
+        subSelect.innerHTML = '';
+        subContainer.style.display = 'none';
+    }
+
+    if (categoryValue === "Одежда" || categoryValue === "Обувь") {
+        sizeSelect.innerHTML = '<option value="all">Все размеры</option>';
+        let targetSizes = (categoryValue === "Одежда") ? clothingSizes : shoeSizes;
+        
+        targetSizes.forEach(sz => {
+            const opt = document.createElement('option');
+            opt.value = sz;
+            opt.textContent = sz;
+            sizeSelect.appendChild(opt);
+        });
+
+        if (selectedSz && targetSizes.includes(selectedSz)) {
+            sizeSelect.value = selectedSz;
         }
         sizeContainer.style.display = 'block';
     } else {
@@ -598,10 +648,9 @@ function setupViewModalCommon(product) {
     document.getElementById('view-city').textContent = product.city || 'Минск';
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
-    // Загружаем аватарку продавца в карточке товара
     const sellerAvatarContainer = document.querySelector('.seller-card .seller-avatar');
     if (sellerAvatarContainer) {
-        sellerAvatarContainer.innerHTML = '👤'; // заглушка по умолчанию
+        sellerAvatarContainer.innerHTML = '👤';
     }
 
     let rawTg = product.telegram ? String(product.telegram).trim() : '';
@@ -1347,7 +1396,7 @@ function addSearchHistory(query) {
     }
 }
 
-// === УМНАЯ ФИЛЬТРАЦИЯ И СОРТИРОВКА ===
+// === УМНАЯ ФИЛЬТРАЦИЯ И СОРТИРОВКА С ПОДПУНКТАМИ ===
 function filterAndRender() {
     const searchInput = document.querySelector('.search-input');
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -1364,6 +1413,26 @@ function filterAndRender() {
             matchesCat = product.category === currentCategory;
         }
 
+        // Фильтр по категории из модального окна фильтров
+        let matchesFilterCat = true;
+        if (currentFilters.category !== 'all') {
+            matchesFilterCat = product.category === currentFilters.category;
+        }
+
+        // Фильтр по подкатегории из модального окна фильтров
+        let matchesFilterSubcat = true;
+        if (currentFilters.subcategory !== 'all') {
+            matchesFilterSubcat = product.subcategory === currentFilters.subcategory;
+        }
+
+        // Фильтр по размеру из модального окна фильтров
+        let matchesFilterSize = true;
+        if (currentFilters.size !== 'all' && currentFilters.size.trim() !== '') {
+            let pSize = (product.size || '').toLowerCase();
+            let targetSize = currentFilters.size.trim().toLowerCase();
+            matchesFilterSize = pSize.includes(targetSize);
+        }
+
         // Фильтр по городу
         let matchesCity = true;
         if (currentFilters.city !== 'all') {
@@ -1377,22 +1446,9 @@ function filterAndRender() {
         let rawPriceNum = parseFloat(rawPriceStr.replace(/[^\d.]/g, '')) || 0;
         let productCurrency = rawPriceStr.includes('₽') || rawPriceStr.includes('RUB') ? '₽' : 'BYN';
 
-        // Фильтр по выбранной валюте в поиске
         let matchesCurrency = currentFilters.currency === 'all' || productCurrency === currentFilters.currency;
-
-        // Фильтр по минимальной цене
         let matchesPriceMin = currentFilters.priceMin === '' || rawPriceNum >= parseFloat(currentFilters.priceMin);
-        
-        // Фильтр по максимальной цене
         let matchesPriceMax = currentFilters.priceMax === '' || rawPriceNum <= parseFloat(currentFilters.priceMax);
-
-        // Фильтр по размеру (если задан)
-        let matchesSize = true;
-        if (currentFilters.size.trim() !== '') {
-            let pSize = (product.size || '').toLowerCase();
-            let targetSize = currentFilters.size.trim().toLowerCase();
-            matchesSize = pSize.includes(targetSize);
-        }
 
         // Фильтр по рейтингу продавца
         let matchesRating = true;
@@ -1408,7 +1464,7 @@ function filterAndRender() {
             matchesRating = sellerReviews.length > 0 && avgRating >= currentFilters.minRating;
         }
 
-        return matchesQuery && matchesCat && matchesCity && matchesCurrency && matchesPriceMin && matchesPriceMax && matchesSize && matchesRating;
+        return matchesQuery && matchesCat && matchesFilterCat && matchesFilterSubcat && matchesFilterSize && matchesCity && matchesCurrency && matchesPriceMin && matchesPriceMax && matchesRating;
     });
 
     // Сортировка
@@ -1722,7 +1778,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const modal = document.getElementById('modal');
 
-    // Логика фокуса на поиске (показ оверлея и кнопки очистки)
     if (searchInput) {
         searchInput.addEventListener('focus', () => {
             if (keyboardOverlay) keyboardOverlay.classList.remove('hidden');
@@ -1789,6 +1844,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Логика подкатегорий и размеров в фильтрах
+    const filterCategorySelect = document.getElementById('filter-category-select');
+    if (filterCategorySelect) {
+        filterCategorySelect.addEventListener('change', (e) => {
+            updateFilterSubcategories(e.target.value, 'all', 'all');
+        });
+    }
+
     // Логика модального окна фильтров
     const filtersModal = document.getElementById('filters-modal');
     const openFiltersBtn = document.getElementById('open-filters-btn');
@@ -1814,11 +1877,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 filterCustomCityInput.value = fCity;
             }
 
+            filterCategorySelect.value = currentFilters.category;
+            updateFilterSubcategories(currentFilters.category, currentFilters.subcategory, currentFilters.size);
+
             document.getElementById('filter-sort-select').value = currentFilters.sort;
             document.getElementById('filter-price-min').value = currentFilters.priceMin;
             document.getElementById('filter-price-max').value = currentFilters.priceMax;
             document.getElementById('filter-currency-select').value = currentFilters.currency;
-            document.getElementById('filter-size-input').value = currentFilters.size;
             document.getElementById('filter-rating-select').value = currentFilters.minRating;
 
             filtersModal.classList.remove('hidden');
@@ -1836,11 +1901,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentFilters.city = fCityVal;
             }
 
+            currentFilters.category = filterCategorySelect.value;
+            
+            const subSel = document.getElementById('filter-subcategory-select');
+            currentFilters.subcategory = subSel ? subSel.value : 'all';
+
+            const sizeSel = document.getElementById('filter-size-select');
+            currentFilters.size = sizeSel ? sizeSel.value : 'all';
+
             currentFilters.sort = document.getElementById('filter-sort-select').value;
             currentFilters.priceMin = document.getElementById('filter-price-min').value.trim();
             currentFilters.priceMax = document.getElementById('filter-price-max').value.trim();
             currentFilters.currency = document.getElementById('filter-currency-select').value;
-            currentFilters.size = document.getElementById('filter-size-input').value.trim();
             currentFilters.minRating = parseFloat(document.getElementById('filter-rating-select').value) || 0;
 
             filtersModal.classList.add('hidden');
@@ -1854,11 +1926,12 @@ document.addEventListener('DOMContentLoaded', () => {
             filterCitySelect.value = 'all';
             filterCustomCityInput.classList.add('hidden');
             filterCustomCityInput.value = '';
+            filterCategorySelect.value = 'all';
+            updateFilterSubcategories('all', 'all', 'all');
             document.getElementById('filter-sort-select').value = 'default';
             document.getElementById('filter-price-min').value = '';
             document.getElementById('filter-price-max').value = '';
             document.getElementById('filter-currency-select').value = 'all';
-            document.getElementById('filter-size-input').value = '';
             document.getElementById('filter-rating-select').value = '0';
 
             currentFilters = {
@@ -1867,7 +1940,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 priceMin: '',
                 priceMax: '',
                 currency: 'all',
-                size: '',
+                category: 'all',
+                subcategory: 'all',
+                size: 'all',
                 minRating: 0
             };
 
