@@ -92,13 +92,10 @@
                 <h2 id="user-name" class="profile-name">Имя Пользователя</h2>
                 <div id="user-tg-tag" class="profile-username">@username</div>
                 
-                <!-- Описание О себе -->
                 <p id="profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; margin-bottom: 4px; display: none; width: 100%;"></p>
 
-                <!-- Статус верификации -->
                 <div id="profile-badge" class="profile-badge unverified" style="margin-top: 6px;">❌ Профиль не подтвержден</div>
                 
-                <!-- Кнопки управления профилем (теперь выстроены гармонично в колонку с отступами) -->
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 8px; width: 100%;">
                     <button id="open-verify-btn" class="btn-secondary" onclick="openVerifyModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">Верификация</button>
                     <button id="open-edit-profile-btn" class="btn-secondary" onclick="openSettingsModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">⚙️ Настройки</button>
@@ -132,7 +129,6 @@
                 <div id="my-products" class="products-grid"></div>
             </div>
 
-            <!-- Секция: Мои покупки -->
             <div id="sec-purchases" class="profile-section hidden">
                 <div id="my-purchases-grid" class="products-grid"></div>
             </div>
@@ -249,8 +245,14 @@
                 <option value="Другое" selected>📦 Другое</option>
             </select>
 
+            <!-- Подкатегория -->
             <div id="subcategory-container" style="display: none; margin-bottom: 12px;">
                 <select id="subcategory-select" class="select-input"></select>
+            </div>
+
+            <!-- НОВЫЙ БЛОК: Выбор размера (скрыт по умолчанию) -->
+            <div id="size-container" style="display: none; margin-bottom: 12px;">
+                <select id="size-select" class="select-input"></select>
             </div>
 
             <select id="city-select" class="select-input">
@@ -327,7 +329,6 @@
                 <h2 id="public-user-name" class="profile-name">Продавец</h2>
                 <div id="public-user-tg" class="profile-username">@username</div>
                 
-                <!-- Описание О себе в чужом профиле -->
                 <p id="public-profile-bio" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 5px; display: none;"></p>
                 
                 <div id="public-profile-badge" class="profile-badge unverified">⏳ Проверка...</div>
