@@ -16,6 +16,9 @@
 </head>
 <body>
 
+    <!-- ОВЕРЛЕЙ ДЛЯ СКРЫТИЯ КЛАВИАТУРЫ ПРИ КЛИКЕ ВНЕ ПОЛЯ -->
+    <div id="keyboard-overlay" class="keyboard-overlay hidden" onclick="dismissKeyboard()"></div>
+
     <!-- ИНДИКАТОР ЗАГРУЗКИ -->
     <div id="loading-spinner" class="spinner-overlay">
         <div class="spinner"></div>
@@ -54,15 +57,14 @@
         <div id="tab-home" class="tab-content">
             <div class="header">
                 <div class="search-row">
-                    <input type="text" class="search-input" placeholder="Поиск товаров...">
+                    <input type="text" class="search-input" placeholder="Поиск товаров..." enterkeyhint="search">
+                    <button id="clear-search-btn" class="theme-btn hidden" style="border: none; outline: none; width: 36px; font-size: 14px;" title="Очистить">✕</button>
                     <button id="open-filters-btn" class="theme-btn" style="border: none; outline: none;" title="Фильтры">⚙️</button>
                     <button id="theme-toggle" class="theme-btn" style="border: none; outline: none;">🌙</button>
                 </div>
 
                 <!-- Быстрые теги и история поиска -->
-                <div id="search-tags-container" class="search-tags-bar">
-                    <!-- Сюда динамически выводятся теги истории и популярных запросов -->
-                </div>
+                <div id="search-tags-container" class="search-tags-bar"></div>
 
                 <div class="categories-bar">
                     <button class="cat-btn active" data-cat="all">Все</button>
