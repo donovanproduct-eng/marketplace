@@ -26,7 +26,7 @@ const subcategoriesMap = {
     "Одежда": ["Футболки и майки", "Штаны и джинсы", "Верхняя одежда", "Кофты и худи", "Рубашки", "Платья и юбки", "Другая одежда"],
     "Обувь": ["Кроссовки и кеды", "Туфли", "Ботинки", "Сапоги", "Тапочки", "Другая обувь"],
     "Аксессуары": ["Сумки и рюкзаки", "Часы", "Очки", "Украшения", "Головные уборы", "Другие аксессуары"],
-    "Другое": [] // Если "Другое", подкатегорий нет
+    "Другое": [] 
 };
 
 function triggerHaptic(type = 'light') {
@@ -40,11 +40,14 @@ function triggerHaptic(type = 'light') {
     }
 }
 
+// Переменные
 let products = [];
-let favorites = JSON.parse(localStorage.getItem('my_marketplace_favorites')) || [];
 let allReviews = [];
 let myPurchases = [];
+
+// Привязка пользователя и его избранного
 let currentUser = JSON.parse(localStorage.getItem('my_marketplace_user')) || null;
+let favorites = currentUser ? (JSON.parse(localStorage.getItem(`favs_${currentUser.username}`)) || []) : [];
 
 let currentCategory = 'all';
 let currentCityFilter = 'all';
@@ -283,10 +286,10 @@ function applyTheme() {
 
 function saveToStorage() {
     try {
-        localStorage.setItem('my_marketplace_favorites', JSON.stringify(favorites));
         localStorage.setItem('my_marketplace_theme', isDarkTheme ? 'dark' : 'light');
         if (currentUser) {
             localStorage.setItem('my_marketplace_user', JSON.stringify(currentUser));
+            localStorage.setItem(`favs_${currentUser.username}`, JSON.stringify(favorites));
         } else {
             localStorage.removeItem('my_marketplace_user');
         }
@@ -348,14 +351,20 @@ async function syncUserWithFirebase() {
             const data = doc.data();
             currentUser.isVerified = !!data.isVerified;
             currentUser.phone = data.phone || currentUser.phone || '';
+            // Подтягиваем избранное из Firebase для синхронизации на разных устройствах
+            if (data.favorites) {
+                favorites = data.favorites;
+            }
             saveToStorage();
             renderProfile();
+            filterAndRender();
         } else {
             await userDocRef.set({
                 name: currentUser.name,
                 username: currentUser.username,
                 isVerified: false,
-                phone: ''
+                phone: '',
+                favorites: favorites // Сохраняем начальный массив
             });
         }
     } catch (e) {
@@ -372,6 +381,7 @@ async function loginUser(name, username, photoUrl = '') {
         isVerified: false,
         phone: ''
     };
+    favorites = JSON.parse(localStorage.getItem(`favs_${cleanUsername}`)) || [];
     triggerHaptic('success');
     saveToStorage();
     checkAuth();
@@ -380,6 +390,7 @@ async function loginUser(name, username, photoUrl = '') {
 function logoutUser() {
     triggerHaptic('warning');
     currentUser = null;
+    favorites = []; // Очищаем избранное при выходе
     saveToStorage();
     checkAuth();
 }
@@ -788,7 +799,8 @@ function renderPublicProfileProducts(sellerTelegram) {
     });
 }
 
-window.toggleFavorite = function(event, id) {
+// Привязка избранного к конкретному аккаунту и синхронизация с Firebase
+window.toggleFavorite = async function(event, id) {
     event.stopPropagation();
     if (favorites.includes(id)) {
         favorites = favorites.filter(favId => favId !== id);
@@ -802,6 +814,17 @@ window.toggleFavorite = function(event, id) {
     renderMyProductsTab();
     if (activeSellerData.telegram) {
         renderPublicProfileProducts(activeSellerData.telegram);
+    }
+
+    // Сохраняем в Firebase
+    if (currentUser && currentUser.username) {
+        try {
+            await db.collection("users").doc(currentUser.username.toLowerCase()).update({
+                favorites: favorites
+            });
+        } catch(e) {
+            console.error("Ошибка сохранения избранного в базу", e);
+        }
     }
 };
 
