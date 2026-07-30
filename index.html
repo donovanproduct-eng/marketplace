@@ -96,9 +96,9 @@
                 <button id="open-verify-btn" class="verify-action-btn">Подтвердить профиль</button>
 
                 <div class="rating-box">
-                    <span class="rating-score">4.9</span>
-                    <span class="rating-stars">⭐⭐⭐⭐⭐</span>
-                    <span id="profile-reviews-count" class="rating-count">(2 отзыва)</span>
+                    <span id="profile-rating-score" class="rating-score">0.0</span>
+                    <span id="profile-rating-stars" class="rating-stars">⭐⭐⭐⭐⭐</span>
+                    <span id="profile-reviews-count" class="rating-count">(0 отзывов)</span>
                 </div>
             </div>
 
@@ -285,16 +285,16 @@
                 <div class="profile-avatar">👤</div>
                 <h2 id="public-user-name" class="profile-name">Продавец</h2>
                 <div id="public-user-tg" class="profile-username">@username</div>
-                <div class="profile-badge verified">✓ Подтверждённый продавец</div>
+                
+                <div id="public-profile-badge" class="profile-badge unverified">⏳ Проверка...</div>
 
                 <div class="rating-box">
-                    <span class="rating-score">5.0</span>
-                    <span class="rating-stars">⭐⭐⭐⭐⭐</span>
-                    <span class="rating-count">(2 отзыва)</span>
+                    <span id="public-rating-score" class="rating-score">0.0</span>
+                    <span id="public-rating-stars" class="rating-stars">⭐⭐⭐⭐⭐</span>
+                    <span id="public-rating-count" class="rating-count">(0 отзывов)</span>
                 </div>
             </div>
 
-            <!-- Обратите внимание, здесь убраны onclick атрибуты -->
             <div class="profile-tabs-bar">
                 <button id="pub-tab-ads" class="p-tab-btn active">Товары</button>
                 <button id="pub-tab-reviews" class="p-tab-btn">Отзывы</button>
