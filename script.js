@@ -1633,7 +1633,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     triggerHaptic('error');
                     alert(isActuallyLegit ? '❌ Ошибка! Это оказался оригинал, вы упустили отличный лот.' : '❌ Ошибка! Вас обманули, это паленка! Товар потерял в стоимости.');
                     currentResellerLot.marketValue = Math.floor(currentResellerLot.buyPrice * 0.7);
-                    currentResellerLot.isFake = true; // Отмечаем красивым бейджем вместо порчи названия
+                    currentResellerLot.isFake = true; 
                 }
             }
 
@@ -2261,7 +2261,7 @@ function handleZoomSwipe() {
     }
 }
 
-// === СИМУЛЯТОР РЕСЕЛЛЕРА С КРАСИВЫМ ОФОРМЛЕНИЕМ ПАЛЕНКИ И КРУГЛОЙ КНОПКОЙ ПРОДАЖИ ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА + МЕХАНИКА ХИМЧИСТКИ И РЕМОНТА ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
@@ -2312,7 +2312,8 @@ function spawnResellerLot() {
         desc: randomProduct.description || 'Реальный товар с маркетплейса.',
         buyPrice: buyPrice,
         marketValue: marketValue,
-        isFake: false
+        isFake: false,
+        isCleaned: false
     };
 
     if (!document.getElementById('reseller-lot-img')) {
@@ -2441,14 +2442,21 @@ function renderResellerInventory() {
         let profit = sellOffer - item.buyPrice;
         let profitColor = profit >= 0 ? '#34c759' : '#ff3b30';
 
-        // Если вещь паленка, добавляем красивый бэйдж вместо порчи названия
         let fakeBadgeHtml = item.isFake ? `<div class="fake-badge">⚠️ ПАЛЕНКА</div>` : '';
+        let cleanBadgeHtml = item.isCleaned ? `<div class="clean-badge">✨ РЕМОНТ</div>` : '';
+        
+        // Кнопка химчистки доступна только если вещь еще не чистилась и не является безнадежной паленкой
+        let cleanCost = Math.max(15, Math.floor(item.buyPrice * 0.2));
+        let cleanBtnHtml = (!item.isCleaned && !item.isFake) ? 
+            `<button class="reseller-btn-clean" onclick="cleanResellerItem(${index}, ${cleanCost})">🧼 Химчистка (-${cleanCost} BYN)</button>` : '';
 
         div.innerHTML = `
             ${fakeBadgeHtml}
+            ${cleanBadgeHtml}
             <img class="reseller-item-img" src="${item.img}" alt="${item.title}">
             <div style="font-weight: 700; font-size: 13px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">Покупка: ${item.buyPrice} BYN</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Покупка: ${item.buyPrice} BYN</div>
+            ${cleanBtnHtml}
             <button class="reseller-btn-sell" onclick="sellResellerItem(${index}, ${sellOffer})">
                 Продать за ${sellOffer} BYN<br>
                 <span style="font-size: 11px; color: ${profit >= 0 ? '#d4edda' : '#f8d7da'}; font-weight: 600;">(${profit >= 0 ? '+' : ''}${profit} BYN)</span>
@@ -2457,6 +2465,24 @@ function renderResellerInventory() {
         container.appendChild(div);
     });
 }
+
+window.cleanResellerItem = function(index, cost) {
+    if (resellerState.balance < cost) {
+        triggerHaptic('error');
+        alert('Недостаточно средств для химчистки!');
+        return;
+    }
+
+    resellerState.balance -= cost;
+    let item = resellerState.inventory[index];
+    item.isCleaned = true;
+    item.buyPrice += cost; // добавляем стоимость ремонта к затратам
+    item.marketValue = Math.floor(item.marketValue * 1.35); // увеличиваем рыночную стоимость на 35% после чистки
+    
+    triggerHaptic('success');
+    saveResellerState();
+    renderResellerInventory();
+};
 
 window.sellResellerItem = function(index, sellPrice) {
     clearInterval(resellerTimerInterval);
