@@ -1252,7 +1252,8 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.add('hidden');
+    // ИСПРАВЛЕНО: убран неправильный класс hidden, теперь модалка открывается
+    document.getElementById('modal').classList.remove('hidden');
 }
 
 // === РЕНДЕР ИСТОРИИ И ТЕГОВ ПОИСКА ===
@@ -1685,7 +1686,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Скрытие клавиатуры при нажатии Enter/Search на мобильной клавиатуре
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 dismissKeyboard();
