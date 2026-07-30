@@ -1167,27 +1167,32 @@ function renderProfile() {
     const bioEl = document.getElementById('profile-bio');
     const badgeEl = document.getElementById('profile-badge');
     const openVerifyBtn = document.getElementById('open-verify-btn');
-    const coinsEl = document.getElementById('user-coins-count');
-    const dailyBtn = document.getElementById('daily-bonus-btn');
 
     nameEl.textContent = currentUser.name;
     tgEl.textContent = `@${currentUser.username}`;
-    if (coinsEl) coinsEl.textContent = `💎 ${currentUser.coins || 0}`;
 
-    // Проверка активности кнопки бонуса
+    // ДИНАМИЧЕСКАЯ ГЕРАЦИЯ ВИДЖЕТА БОНУСА (ГАРАНТИРОВАННОЕ ПОЯВЛЕНИЕ)
+    let coinsWidget = document.getElementById('coins-widget-container');
+    if (!coinsWidget) {
+        coinsWidget = document.createElement('div');
+        coinsWidget.id = 'coins-widget-container';
+        coinsWidget.className = 'user-coins-card';
+        tgEl.insertAdjacentElement('afterend', coinsWidget);
+    }
+
     const now = new Date();
     const todayStr = `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
-    if (dailyBtn) {
-        if (currentUser.lastDailyBonus === todayStr) {
-            dailyBtn.disabled = true;
-            dailyBtn.textContent = '🎁 Завтра +25 💎';
-            dailyBtn.style.opacity = '0.5';
-        } else {
-            dailyBtn.disabled = false;
-            dailyBtn.textContent = '🎁 Бонус +25 💎';
-            dailyBtn.style.opacity = '1';
-        }
-    }
+    const isBonusClaimed = currentUser.lastDailyBonus === todayStr;
+
+    coinsWidget.innerHTML = `
+        <div class="coins-balance-box">
+            <span>Баланс:</span>
+            <span id="user-coins-count" class="coins-val">💎 ${currentUser.coins || 0}</span>
+        </div>
+        <button id="daily-bonus-btn" class="daily-bonus-btn" onclick="claimDailyBonus()" ${isBonusClaimed ? 'disabled style="opacity:0.5;"' : ''}>
+            ${isBonusClaimed ? '🎁 Завтра +25 💎' : '🎁 Бонус +25 💎'}
+        </button>
+    `;
 
     if (currentUser.customAvatar) {
         avatarEl.innerHTML = `<img src="${currentUser.customAvatar}" alt="Avatar">`;
@@ -1721,7 +1726,6 @@ function renderProducts(itemsToRender) {
         return;
     }
 
-    // Разделение на VIP и обычные
     const vipItems = itemsToRender.filter(item => item.isVip);
     const normalItems = itemsToRender.filter(item => !item.isVip);
 
