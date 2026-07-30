@@ -54,6 +54,37 @@ function hideLoader() {
     }
 }
 
+// Универсальная функция подсчета рейтинга
+function updateRatingUI(reviewsArray, scoreId, starsId, countId) {
+    const scoreEl = document.getElementById(scoreId);
+    const starsEl = document.getElementById(starsId);
+    const countEl = document.getElementById(countId);
+    
+    if (!scoreEl || !starsEl || !countEl) return;
+
+    if (reviewsArray.length === 0) {
+        scoreEl.textContent = '0.0';
+        starsEl.textContent = '⭐⭐⭐⭐⭐';
+        countEl.textContent = '(0 отзывов)';
+    } else {
+        let totalStars = 0;
+        reviewsArray.forEach(r => totalStars += parseInt(r.stars || 5));
+        const avg = (totalStars / reviewsArray.length).toFixed(1);
+        
+        scoreEl.textContent = avg;
+        
+        const fullStars = Math.round(avg);
+        starsEl.textContent = '⭐'.repeat(fullStars === 0 ? 1 : fullStars); 
+        
+        let word = 'отзывов';
+        let c = reviewsArray.length;
+        if (c % 10 === 1 && c % 100 !== 11) word = 'отзыв';
+        else if ([2, 3, 4].includes(c % 10) && ![12, 13, 14].includes(c % 100)) word = 'отзыва';
+        
+        countEl.textContent = `(${c} ${word})`;
+    }
+}
+
 // ПОДПИСКА НА FIREBASE (ТОВАРЫ)
 function listenFirebaseProducts() {
     db.collection("products")
@@ -467,13 +498,33 @@ window.openActiveSellerProfile = function() {
 
     const pubNameEl = document.getElementById('public-user-name');
     const pubTgEl = document.getElementById('public-user-tg');
+    const pubBadgeEl = document.getElementById('public-profile-badge');
 
     if (pubNameEl) pubNameEl.textContent = activeSellerData.name || 'Продавец';
-    if (pubTgEl) {
-        pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
+    if (pubTgEl) pubTgEl.textContent = targetTg ? `@${targetTg}` : '@username';
+
+    // Проверяем статус верификации продавца в базе данных
+    if (pubBadgeEl) {
+        pubBadgeEl.textContent = '⏳ Проверка...';
+        pubBadgeEl.className = 'profile-badge unverified';
+        
+        if (targetTg) {
+            db.collection("users").doc(targetTg.toLowerCase()).get().then(doc => {
+                if (doc.exists && doc.data().isVerified) {
+                    pubBadgeEl.textContent = '✓ Подтверждённый продавец';
+                    pubBadgeEl.className = 'profile-badge verified';
+                } else {
+                    pubBadgeEl.textContent = '❌ Профиль не подтвержден';
+                    pubBadgeEl.className = 'profile-badge unverified';
+                }
+            }).catch(e => {
+                console.error("Ошибка загрузки верификации:", e);
+                pubBadgeEl.textContent = '❌ Профиль не подтвержден';
+                pubBadgeEl.className = 'profile-badge unverified';
+            });
+        }
     }
 
-    // Жестко сбрасываем вкладки на "Товары" при открытии
     const pubTabAds = document.getElementById('pub-tab-ads');
     const pubTabReviews = document.getElementById('pub-tab-reviews');
     const pubSecAds = document.getElementById('pub-sec-ads');
@@ -482,7 +533,6 @@ window.openActiveSellerProfile = function() {
     if (pubTabAds && pubTabReviews && pubSecAds && pubSecReviews) {
         pubTabAds.classList.add('active');
         pubTabReviews.classList.remove('active');
-        
         pubSecAds.style.display = 'block';
         pubSecReviews.style.display = 'none';
     }
@@ -501,8 +551,6 @@ function renderReviews() {
 
     const myTg = currentUser.username.replace('@', '').toLowerCase();
     const myReviews = allReviews.filter(r => (r.sellerTelegram || '').toLowerCase() === myTg);
-
-    document.getElementById('profile-reviews-count').textContent = `(${myReviews.length} отзывов)`;
 
     if (myReviews.length === 0) {
         list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 10px;">Пока нет отзывов</div>';
@@ -531,6 +579,9 @@ function renderPublicProfileReviews(sellerTelegram) {
 
     const cleanSellerTg = sellerTelegram.replace('@', '').toLowerCase();
     const sellerReviews = allReviews.filter(r => (r.sellerTelegram || '').toLowerCase() === cleanSellerTg);
+    
+    // Обновляем динамический подсчет рейтинга
+    updateRatingUI(sellerReviews, 'public-rating-score', 'public-rating-stars', 'public-rating-count');
 
     if (sellerReviews.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">У этого продавца пока нет отзывов</div>';
@@ -627,6 +678,11 @@ function renderProfile() {
     });
 
     document.getElementById('my-ads-count').textContent = myProducts.length;
+
+    // Обновляем статистику отзывов в своем профиле
+    const myTg = currentUser.username.replace('@', '').toLowerCase();
+    const myReviews = allReviews.filter(r => (r.sellerTelegram || '').toLowerCase() === myTg);
+    updateRatingUI(myReviews, 'profile-rating-score', 'profile-rating-stars', 'profile-reviews-count');
 
     const myContainer = document.getElementById('my-products');
     if (myContainer) {
@@ -1077,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Железобетонное переключение вкладок в публичном профиле
+    // Обработчик вкладок
     const pubTabAds = document.getElementById('pub-tab-ads');
     const pubTabReviews = document.getElementById('pub-tab-reviews');
     const pubSecAds = document.getElementById('pub-sec-ads');
@@ -1090,7 +1146,6 @@ document.addEventListener('DOMContentLoaded', () => {
             pubTabAds.classList.add('active');
             pubTabReviews.classList.remove('active');
             
-            // Прямое управление стилями для 100% надежности
             pubSecAds.style.display = 'block';
             pubSecReviews.style.display = 'none';
         });
@@ -1101,7 +1156,6 @@ document.addEventListener('DOMContentLoaded', () => {
             pubTabReviews.classList.add('active');
             pubTabAds.classList.remove('active');
             
-            // Прямое управление стилями
             pubSecReviews.style.display = 'block';
             pubSecAds.style.display = 'none';
         });
