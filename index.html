@@ -203,7 +203,6 @@
             <h2 id="modal-title">Добавить объявление</h2>
             <input type="text" id="title-input" placeholder="Название товара">
             
-            <!-- БЛОК ВВОДА ЦЕНЫ С ТЕМНЫМ ФОНОМ (type="text" + inputmode="numeric") -->
             <div style="display: flex; gap: 10px; margin-bottom: 12px;">
                 <input type="text" inputmode="numeric" id="price-input" placeholder="Цена (только цифры)" style="flex: 2; margin-bottom: 0;">
                 <select id="currency-select" class="select-input" style="flex: 1; margin-bottom: 0;">
@@ -219,6 +218,13 @@
                 <option value="Аксессуары">🎒 Аксессуары</option>
                 <option value="Другое" selected>📦 Другое</option>
             </select>
+
+            <!-- НОВЫЙ БЛОК: Выбор подкатегории (по умолчанию скрыт) -->
+            <div id="subcategory-container" style="display: none; margin-bottom: 12px;">
+                <select id="subcategory-select" class="select-input">
+                    <!-- Заполняется через JS в зависимости от категории -->
+                </select>
+            </div>
 
             <select id="city-select" class="select-input">
                 <option value="Минск" selected>Минск</option>
