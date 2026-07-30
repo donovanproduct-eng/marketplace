@@ -85,8 +85,8 @@
             <div id="my-products-tab-grid" class="products-grid"></div>
         </div>
 
-        <!-- Вкладка: Мой Профиль -->
-        <div id="tab-profile" class="tab-content hidden">
+        <!-- Вкладка: Мой Профиль (добавлен padding-bottom снизу) -->
+        <div id="tab-profile" class="tab-content hidden" style="padding-bottom: 50px;">
             <div class="profile-card">
                 <div id="user-avatar" class="profile-avatar">👤</div>
                 <h2 id="user-name" class="profile-name">Имя Пользователя</h2>
@@ -97,7 +97,7 @@
 
                 <div id="profile-badge" class="profile-badge unverified">❌ Профиль не подтвержден</div>
                 
-                <!-- Кнопки управления профилем (ОТРИЦАТЕЛЬНЫЙ ОТСТУП ДЛЯ ПОДНЯТИЯ) -->
+                <!-- Кнопки управления профилем -->
                 <div style="display: flex; justify-content: center; gap: 10px; margin-top: -12px; margin-bottom: 12px; position: relative; z-index: 2;">
                     <button id="open-verify-btn" class="btn-secondary" onclick="openVerifyModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">Верификация</button>
                     <button id="open-edit-profile-btn" class="btn-secondary" onclick="openSettingsModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">⚙️ Настройки</button>
@@ -140,7 +140,7 @@
                 <div id="reviews-list" class="reviews-list"></div>
             </div>
 
-            <button id="logout-btn" class="logout-btn" style="width:100%; margin-top:20px; border: none; outline: none;">Выйти из аккаунта</button>
+            <button id="logout-btn" class="logout-btn" style="width:100%; margin-top:25px; margin-bottom: 20px; border: none; outline: none;">Выйти из аккаунта</button>
         </div>
 
         <!-- Нижняя навигация -->
