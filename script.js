@@ -131,6 +131,12 @@ let tempAvatarBase64 = null;
 let isDarkTheme = localStorage.getItem('my_marketplace_theme') === 'dark';
 let activeSellerData = { name: '', telegram: '' };
 
+// === ПАГИНАЦИЯ И ОПТИМИЗАЦИЯ ===
+let lastVisibleProductDoc = null;
+let isLoadingProducts = false;
+let hasMoreProducts = true;
+const PAGE_SIZE = 10;
+
 function hideLoader() {
     const loader = document.getElementById('loading-spinner');
     if (loader) {
@@ -370,32 +376,75 @@ function updateFilterSubcategories(categoryValue, selectedSub = 'all', selectedS
     }
 }
 
-function listenFirebaseProducts() {
-    db.collection("products")
-      .orderBy("createdAt", "desc")
-      .onSnapshot((snapshot) => {
-          products = [];
-          snapshot.forEach((doc) => {
-              const data = doc.data();
-              products.push({
-                  id: doc.id,
-                  ...data,
-                  images: (data.images && data.images.length > 0) ? data.images : [data.image || 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300']
-              });
-          });
-          filterAndRender();
-          renderProfile();
-          renderMyProductsTab();
-          
-          if (window.currentOpenedSellerTg) {
-              renderPublicProfileProducts(window.currentOpenedSellerTg);
-          }
+// === ОПТИМИЗИРОВАННАЯ ЗАГРУЗКА И ПАГИНАЦИЯ ТОВАРОВ ===
+function fetchProductsPage(isInitial = false) {
+    if (isLoadingProducts || (!hasMoreProducts && !isInitial)) return;
+    isLoadingProducts = true;
 
-          hideLoader();
-      }, (err) => {
-          console.error("Ошибка Firebase (продукты):", err);
-          hideLoader();
-      });
+    if (isInitial) {
+        products = [];
+        lastVisibleProductDoc = null;
+        hasMoreProducts = true;
+    }
+
+    let query = db.collection("products")
+                  .orderBy("createdAt", "desc")
+                  .limit(PAGE_SIZE);
+
+    if (lastVisibleProductDoc && !isInitial) {
+        query = query.startAfter(lastVisibleProductDoc);
+    }
+
+    query.get().then((snapshot) => {
+        if (snapshot.empty) {
+            hasMoreProducts = false;
+            isLoadingProducts = false;
+            if (isInitial) filterAndRender();
+            hideLoader();
+            return;
+        }
+
+        lastVisibleProductDoc = snapshot.docs[snapshot.docs.length - 1];
+        
+        if (snapshot.docs.length < PAGE_SIZE) {
+            hasMoreProducts = false;
+        }
+
+        const newItems = [];
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            newItems.push({
+                id: doc.id,
+                ...data,
+                images: (data.images && data.images.length > 0) ? data.images : ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300']
+            });
+        });
+
+        if (isInitial) {
+            products = newItems;
+        } else {
+            newItems.forEach(item => {
+                if (!products.some(p => p.id === item.id)) {
+                    products.push(item);
+                }
+            });
+        }
+
+        isLoadingProducts = false;
+        filterAndRender();
+        renderProfile();
+        renderMyProductsTab();
+        
+        if (window.currentOpenedSellerTg) {
+            renderPublicProfileProducts(window.currentOpenedSellerTg);
+        }
+
+        hideLoader();
+    }).catch((err) => {
+        console.error("Ошибка загрузки пагинации:", err);
+        isLoadingProducts = false;
+        hideLoader();
+    });
 }
 
 function listenFirebaseReviews() {
@@ -720,7 +769,7 @@ function renderPurchasesTab() {
         card.onclick = () => openPurchasedViewModal(item);
 
         card.innerHTML = `
-            <img class="product-image" src="${mainImage}" alt="${item.title}">
+            <img class="product-image" src="${mainImage}" alt="${item.title}" loading="lazy">
             <div class="product-title">${item.title}</div>
             <div class="product-city">${item.city || 'Минск'}</div>
             <div class="product-price">${item.price}</div>
@@ -1053,7 +1102,7 @@ function renderMyProductsTab() {
         card.innerHTML = `
             <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
             <button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>
-            <img class="product-image" src="${mainImage}" alt="${item.title}">
+            <img class="product-image" src="${mainImage}" alt="${item.title}" loading="lazy">
             <div class="product-title">${item.title}</div>
             <div class="product-city">${item.city || 'Минск'}</div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 8px 10px 8px;">
@@ -1132,7 +1181,7 @@ function renderProfile() {
                 card.innerHTML = `
                     <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
                     <button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>
-                    <img class="product-image" src="${mainImage}" alt="${item.title}">
+                    <img class="product-image" src="${mainImage}" alt="${item.title}" loading="lazy">
                     <div class="product-title">${item.title}</div>
                     <div class="product-city">${item.city || 'Минск'}</div>
                     <div class="product-price">${item.price}</div>
@@ -1173,7 +1222,7 @@ function renderPublicProfileProducts(sellerTelegram) {
 
         card.innerHTML = `
             <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
-            <img class="product-image" src="${mainImage}" alt="${item.title}">
+            <img class="product-image" src="${mainImage}" alt="${item.title}" loading="lazy">
             <div class="product-title">${item.title}</div>
             <div class="product-city">${item.city || 'Минск'}</div>
             <div class="product-price">${item.price}</div>
@@ -1337,9 +1386,13 @@ async function finalizeProductDeletion(buyerUsername) {
 
         await db.collection("products").doc(pendingDeleteId).delete();
         favorites = favorites.filter(favId => favId !== pendingDeleteId);
+        products = products.filter(p => p.id !== pendingDeleteId);
         triggerHaptic('warning');
         playSound('click');
         saveToStorage();
+        filterAndRender();
+        renderProfile();
+        renderMyProductsTab();
     } catch (err) {
         console.error("Ошибка удаления:", err);
     }
@@ -1474,7 +1527,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
 }
 
 function renderSearchTags() {
@@ -1615,13 +1668,20 @@ function renderProducts(itemsToRender) {
         card.innerHTML = `
             <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
             ${isMyProduct ? `<button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>` : ''}
-            <img class="product-image" src="${mainImage}" alt="${item.title}">
+            <img class="product-image" src="${mainImage}" alt="${item.title}" loading="lazy">
             <div class="product-title">${item.title}</div>
             <div class="product-city">${item.city || 'Минск'}</div>
             <div class="product-price">${item.price}</div>
         `;
         container.appendChild(card);
     });
+
+    if (hasMoreProducts && currentCategory === 'all') {
+        const spinner = document.createElement('div');
+        spinner.className = 'load-more-spinner';
+        spinner.textContent = 'Прокрутите вниз для загрузки других товаров...';
+        container.appendChild(spinner);
+    }
 }
 
 function compressImage(file, callback) {
@@ -1664,10 +1724,22 @@ function compressImage(file, callback) {
     reader.readAsDataURL(file);
 }
 
+// СЛУШАТЕЛЬ БЕСКОНЕЧНОГО СКРОЛЛА (INFINITE SCROLL)
+window.addEventListener('scroll', () => {
+    if (currentCategory !== 'all') return;
+    
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const threshold = document.body.offsetHeight - 400;
+
+    if (scrollPosition >= threshold && !isLoadingProducts && hasMoreProducts) {
+        fetchProductsPage(false);
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
     checkAuth();
-    listenFirebaseProducts();
+    fetchProductsPage(true);
     listenFirebaseReviews();
     listenFirebaseViews();
     renderSearchTags();
@@ -2324,6 +2396,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         await db.collection("products").add(productData);
                     }
+                    fetchProductsPage(true);
                 } catch (err) {
                     console.error("Firebase save error details:", err);
                     alert("Ошибка публикации: " + err.message);
@@ -2350,29 +2423,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function handleZoomSwipe() {
-    const swipeThreshold = 50;
-    if (touchEndX < touchStartX - swipeThreshold) {
-        if (currentImageIndex < currentProductImages.length - 1) {
-            currentImageIndex++;
-            triggerHaptic('selection');
-            playSound('click');
-            updateGallery();
-            updateZoomGalleryUI();
-        }
-    }
-    if (touchEndX > touchStartX + swipeThreshold) {
-        if (currentImageIndex > 0) {
-            currentImageIndex--;
-            triggerHaptic('selection');
-            playSound('click');
-            updateGallery();
-            updateZoomGalleryUI();
-        }
-    }
-}
-
-// === СИМУЛЯТОР РЕСЕЛЛЕРА (ТОРГ РАЗ В 5 ПРОДАЖ, СУТОЧНЫЕ КВЕСТЫ ПО ЕДИНОМУ ВРЕМЕНИ) ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
@@ -2404,7 +2455,6 @@ function saveResellerState() {
     updateResellerUI();
 }
 
-// Возвращает timestamp сегодняшней полуночи (00:00:00 UTC) для синхронизации у всех игроков
 function getTodayMidnightTimestamp() {
     const now = new Date();
     return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0);
@@ -2587,8 +2637,8 @@ function spawnResellerLot() {
     }
 
     if (!products || products.length === 0) {
-        cardArea.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Создайте хотя бы одно объявление на вкладке «Объявления», чтобы оно появилось в симуляторе!</div>`;
-        setTimeout(spawnResellerLot, 3000);
+        cardArea.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Загрузка товаров для симулятора...</div>`;
+        setTimeout(spawnResellerLot, 2000);
         return;
     }
 
@@ -2769,7 +2819,7 @@ function renderResellerInventory() {
         div.innerHTML = `
             ${fakeBadgeHtml}
             ${cleanBadgeHtml}
-            <img class="reseller-item-img" src="${item.img}" alt="${item.title}">
+            <img class="reseller-item-img" src="${item.img}" alt="${item.title}" loading="lazy">
             <div style="font-weight: 700; font-size: 13px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</div>
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Покупка: ${item.buyPrice} BYN</div>
             ${cleanBtnHtml}
@@ -2804,7 +2854,6 @@ window.cleanResellerItem = function(index, cost) {
     renderResellerInventory();
 };
 
-// === МЕХАНИКА ТОРГА (РАЗ В 5 ПРОДАЖ, РАНДОМ ПЛЮС/МИНУС) ===
 window.trySellWithHaggling = function(index, baseSellPrice) {
     let item = resellerState.inventory[index];
     
@@ -2814,7 +2863,6 @@ window.trySellWithHaggling = function(index, baseSellPrice) {
 
     resellerState.hagglingCounter++;
 
-    // Торг происходит примерно каждый 5-й проданный товар
     if (resellerState.hagglingCounter >= 5) {
         resellerState.hagglingCounter = 0;
         
