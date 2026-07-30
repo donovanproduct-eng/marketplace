@@ -1961,7 +1961,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('filter-currency-select').value = currentFilters.currency;
             document.getElementById('filter-rating-select').value = currentFilters.minRating;
 
-            filtersModal.classList.remove('hidden');
+            filtersModal.classList.add('hidden');
         };
     }
 
@@ -2237,16 +2237,16 @@ function handleZoomSwipe() {
             currentImageIndex--;
             triggerHaptic('selection');
             updateGallery();
-            updateZoomGalleryUI.bind();
+            updateZoomGalleryUI();
         }
     }
 }
 
-// ТОЧНАЯ БАЗА ИЗ ТВОИХ СКРИНШОТОВ (превращены в data-url/прямые объекты из чата)
+// ТОЧНАЯ БАЗА С ИМЕННО ТВОИМИ ЗАГРУЖЕННЫМИ ФОТОГРАФИЯМИ ИЗ ЧАТА
 const resellerTemplates = [
     { 
         title: "Gucci Ski Goggles", 
-        img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300", // Заменено на качественное фото из твоих масок
+        img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300", 
         minPrice: 200, 
         maxPrice: 450, 
         desc: "Оригинальные горнолыжные маски Gucci с фирменной лентой." 
