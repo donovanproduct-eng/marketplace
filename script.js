@@ -2177,11 +2177,100 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const citySelectVal = document.getElementById('city-select').value;
             const customCityVal = document.getElementById('custom-city-input').value.trim();
-    };
+            const finalCity = (citySelectVal === 'custom') ? (customCityVal || 'Минск') : citySelectVal;
+
+            const sellerInput = document.getElementById('seller-input');
+            const telegramInput = document.getElementById('telegram-input');
+            const descInput = document.getElementById('desc-input');
+
+            if (!titleInput.value.trim()) {
+                triggerHaptic('error');
+                alert('Введите название товара!');
+                return;
+            }
+
+            let rawPrice = priceInput.value.trim() || '0';
+            let finalPrice = `${rawPrice} ${currencySelect.value}`;
+
+            triggerHaptic('success');
+            modal.classList.add('hidden');
+
+            const files = fileInput.files ? Array.from(fileInput.files).slice(0, 4) : [];
+
+            const applyChangesWithIssues = async (imagesArray) => {
+                const productData = {
+                    title: titleInput.value.trim(),
+                    price: finalPrice,
+                    category: categorySelect.value || 'Другое',
+                    subcategory: subcategoryVal || '',
+                    size: sizeVal || '',
+                    city: finalCity,
+                    seller: sellerInput.value.trim() || 'Частное лицо',
+                    telegram: telegramInput.value.trim() || '',
+                    description: descInput.value.trim() || '',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (imagesArray && imagesArray.length > 0) {
+                    productData.images = imagesArray;
+                }
+
+                try {
+                    if (editingProductId) {
+                        await db.collection("products").doc(editingProductId).update(productData);
+                    } else {
+                        if (!productData.images) {
+                            productData.images = ['https://images.unsplash.com/photo-1560343090-f0409e92791a?w=300'];
+                        }
+                        await db.collection("products").add(productData);
+                    }
+                } catch (err) {
+                    console.error("Firebase save error details:", err);
+                    alert("Ошибка публикации: " + err.message);
+                }
+            };
+
+            if (files.length > 0) {
+                let processedImages = [];
+                let counter = 0;
+
+                files.forEach(file => {
+                    compressImage(file, (compressedUrl) => {
+                        if (compressedUrl) processedImages.push(compressedUrl);
+                        counter++;
+                        if (counter === files.length) {
+                            applyChangesWithIssues(processedImages);
+                        }
+                    });
+                });
+            } else {
+                applyChangesWithIssues([]);
+            }
+        };
     }
 });
 
-// СИМУЛЯТОР РЕСЕЛЛЕРА + СИСТЕМА УЛУЧШЕНИЯ СКЛАДА
+function handleZoomSwipe() {
+    const swipeThreshold = 50;
+    if (touchEndX < touchStartX - swipeThreshold) {
+        if (currentImageIndex < currentProductImages.length - 1) {
+            currentImageIndex++;
+            triggerHaptic('selection');
+            updateGallery();
+            updateZoomGalleryUI();
+        }
+    }
+    if (touchEndX > touchStartX + swipeThreshold) {
+        if (currentImageIndex > 0) {
+            currentImageIndex--;
+            triggerHaptic('selection');
+            updateGallery();
+            updateZoomGalleryUI();
+        }
+    }
+}
+
+// === СИМУЛЯТОР РЕСЕЛЛЕРА + СИСТЕМА УЛУЧШЕНИЯ СКЛАДА ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
@@ -2227,7 +2316,7 @@ function renderWarehouseBar() {
 
     let upgradeBtnHtml = resellerState.warehouseLevel < 3 ? 
         `<button class="warehouse-upgrade-btn" onclick="upgradeWarehouse(${nextCost})">Улучшить за ${nextCost} BYN</button>` : 
-        `<span style="font-size:11px; color:#34c759; font-weight:750;">Максимум</span>`;
+        `<button class="warehouse-upgrade-btn" style="background:#ff3b30;" onclick="resetWarehouseLevel()">Сбросить склад</button>`;
 
     barContainer.className = 'warehouse-upgrade-bar';
     barContainer.innerHTML = `
@@ -2250,6 +2339,13 @@ window.upgradeWarehouse = function(cost) {
     triggerHaptic('success');
     saveResellerState();
     alert('Поздравляем! Склад успешно улучшен!');
+};
+
+window.resetWarehouseLevel = function() {
+    resellerState.warehouseLevel = 0;
+    triggerHaptic('warning');
+    saveResellerState();
+    alert('Уровень склада сброшен до Гаража (для тестирования).');
 };
 
 function spawnResellerLot() {
