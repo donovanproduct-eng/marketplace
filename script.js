@@ -410,7 +410,7 @@ function setupViewModalCommon(product) {
     updateGallery();
 
     document.getElementById('view-title').textContent = product.title;
-    document.getElementById('view-price').textContent = product.price;
+    document.getElementById('view-price').textContent = product.price; // Отображаем сохраненную цену (с BYN или ₽)
     document.getElementById('view-category').textContent = product.category || 'Другое';
     document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
@@ -957,7 +957,15 @@ function openEditModal() {
     document.getElementById('save-btn').textContent = 'Сохранить';
 
     document.getElementById('title-input').value = product.title;
-    document.getElementById('price-input').value = product.price.replace(' ₽', '');
+    
+    // Парсим сохраненную цену и валюту
+    let savedPrice = product.price || '';
+    let numPart = savedPrice.replace(/[^\d.,]/g, '').trim(); 
+    let currPart = savedPrice.includes('₽') || savedPrice.includes('RUB') ? '₽' : 'BYN';
+    
+    document.getElementById('price-input').value = numPart;
+    document.getElementById('currency-select').value = currPart;
+
     document.getElementById('category-select').value = product.category || 'Другое';
     document.getElementById('city-select').value = product.city || 'Минск';
     document.getElementById('seller-input').value = product.seller || '';
@@ -976,6 +984,7 @@ function openAddModal() {
 
     document.getElementById('title-input').value = '';
     document.getElementById('price-input').value = '';
+    document.getElementById('currency-select').value = 'BYN'; // По умолчанию BYN
     document.getElementById('category-select').value = 'Другое';
     document.getElementById('city-select').value = 'Минск';
     
@@ -1358,6 +1367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBtn.onclick = async () => {
             const titleInput = document.getElementById('title-input');
             const priceInput = document.getElementById('price-input');
+            const currencySelect = document.getElementById('currency-select');
             const categorySelect = document.getElementById('category-select');
             const citySelect = document.getElementById('city-select');
             const sellerInput = document.getElementById('seller-input');
@@ -1370,8 +1380,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            let price = priceInput.value.trim() || '0';
-            if (!price.includes('₽')) price = price + ' ₽';
+            // Склеиваем введенное число и выбранную валюту
+            let rawPrice = priceInput.value.trim() || '0';
+            let finalPrice = `${rawPrice} ${currencySelect.value}`;
 
             triggerHaptic('success');
             modal.classList.add('hidden');
@@ -1381,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const applyChangesWithImages = async (imagesArray) => {
                 const productData = {
                     title: titleInput.value.trim(),
-                    price: price,
+                    price: finalPrice,
                     category: categorySelect.value,
                     city: citySelect.value,
                     seller: sellerInput.value.trim() || 'Частное лицо',
