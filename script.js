@@ -38,144 +38,6 @@ const shoeSizes = [
 const standardCities = ["Минск", "Гродно", "Брест", "Гомель", "Витебск", "Могилев"];
 let searchHistory = JSON.parse(localStorage.getItem('search_history')) || ['iPhone', 'Кроссовки', 'Худи'];
 
-// === СОСТОЯНИЕ СИМУЛЯТОРА РЕСЕЛЛЕРА ===
-let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
-    balance: 400,
-    dealsCount: 0,
-    inventory: []
-};
-let currentResellerLot = null;
-let resellerTimerInterval = null;
-
-function saveResellerState() {
-    localStorage.setItem('reseller_state', JSON.stringify(resellerState));
-    updateResellerUI();
-}
-
-function updateResellerUI() {
-    const balEl = document.getElementById('reseller-balance');
-    const dealsEl = document.getElementById('reseller-deals-count');
-    if (balEl) balEl.textContent = `${resellerState.balance} BYN`;
-    if (dealsEl) dealsEl.textContent = resellerState.dealsCount;
-    renderResellerInventory();
-}
-
-// База случайных вещей для симулятора
-const resellerTemplates = [
-    { title: "Stone Island Zip Hoodie", img: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300", minPrice: 120, maxPrice: 280, desc: "Состояние 9/10, бирки на месте. Продавец срочно отдает." },
-    { title: "Nike Air Force 1 Low", img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300", minPrice: 80, maxPrice: 180, desc: "Немного б/у, но подошва в отличном состоянии." },
-    { title: "Rick Owens Ramones", img: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?w=300", minPrice: 250, maxPrice: 600, desc: "Редкая пара, есть небольшая потертость на носке." },
-    { title: "Carhartt WIP Jacket", img: "https://images.unsplash.com/photo-1548883354-7622d03aca27?w=300", minPrice: 100, maxPrice: 220, desc: "Винтажная рабочая куртка, плотный хлопок." },
-    { title: "Adidas Samba OG", img: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=300", minPrice: 90, maxPrice: 190, desc: "Классика, состояние идеальное, коробка есть." },
-    { title: "Supreme Box Logo Tee", img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300", minPrice: 150, maxPrice: 350, desc: "Лимитка с коллаборации, без следов носки." }
-];
-
-function spawnResellerLot() {
-    const cardArea = document.getElementById('reseller-game-area');
-    if (!cardArea) return;
-
-    if (resellerState.balance <= 0 && resellerState.inventory.length === 0) {
-        cardArea.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff3b30; font-weight: 700;">Вы банкрот! Баланс 0 BYN. <br><button class="btn-primary" onclick="resetResellerGame()" style="margin-top:10px;">Начать заново</button></div>`;
-        return;
-    }
-
-    const template = resellerTemplates[Math.floor(Math.random() * resellerTemplates.length)];
-    const buyPrice = Math.floor(Math.random() * (template.maxPrice - template.minPrice) + template.minPrice);
-    
-    // Реальная рыночная цена с небольшим разбросом (может быть как выигрышной, так и убыточной)
-    const marketMultiplier = (Math.random() * 0.8 + 0.7); // от 0.7 до 1.5 от базовой
-    const marketValue = Math.floor(buyPrice * marketMultiplier + (Math.random() * 60 - 20));
-
-    currentResellerLot = {
-        id: Date.now(),
-        title: template.title,
-        img: template.img,
-        desc: template.desc,
-        buyPrice: buyPrice,
-        marketValue: Math.max(40, marketValue)
-    };
-
-    document.getElementById('reseller-lot-img').src = currentResellerLot.img;
-    document.getElementById('reseller-lot-title').textContent = currentResellerLot.title;
-    document.getElementById('reseller-lot-desc').textContent = currentResellerLot.desc;
-    document.getElementById('reseller-lot-price').textContent = `${currentResellerLot.buyPrice} BYN`;
-    document.getElementById('reseller-lot-market').textContent = `~${currentResellerLot.marketValue} BYN`;
-
-    // Запускаем таймер лота (10 секунд на раздумья)
-    startResellerTimer(10);
-}
-
-function startResellerTimer(seconds) {
-    let timeLeft = seconds;
-    const bar = document.getElementById('reseller-timer-bar');
-    if (!bar) return;
-
-    clearInterval(resellerTimerInterval);
-    bar.style.width = '100%';
-
-    resellerTimerInterval = setInterval(() => {
-        timeLeft--;
-        let percent = (timeLeft / seconds) * 100;
-        bar.style.width = `${percent}%`;
-
-        if (timeLeft <= 0) {
-            clearInterval(resellerTimerInterval);
-            triggerHaptic('warning');
-            spawnResellerLot(); // Пропуск по таймауту
-        }
-    }, 1000);
-}
-
-window.resetResellerGame = function() {
-    resellerState = { balance: 400, dealsCount: 0, inventory: [] };
-    saveResellerState();
-    location.reload();
-};
-
-function renderResellerInventory() {
-    const container = document.getElementById('reseller-inventory');
-    if (!container) return;
-    container.innerHTML = '';
-
-    if (resellerState.inventory.length === 0) {
-        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">Склад пуст. Купите вещи на рынке выше!</div>';
-        return;
-    }
-
-    resellerState.inventory.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'reseller-item-card';
-        
-        // Рандомная цена продажи на Авито/Куфаре
-        let sellOffer = Math.floor(item.marketValue * (Math.random() * 0.3 + 0.85));
-        let profit = sellOffer - item.buyPrice;
-        let profitColor = profit >= 0 ? '#34c759' : '#ff3b30';
-
-        div.innerHTML = `
-            <img class="reseller-item-img" src="${item.img}" alt="${item.title}">
-            <div style="font-weight: 700; font-size: 13px; margin-bottom: 2px;">${item.title}</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">Покупка: ${item.buyPrice} BYN</div>
-            <button class="btn-primary" style="padding: 6px; font-size: 12px; border:none; outline:none;" onclick="sellResellerItem(${index}, ${sellOffer})">Продать за ${sellOffer} BYN <br><span style="font-size: 10px; color:${profitColor};">(${profit >= 0 ? '+' : ''}${profit} BYN)</span></button>
-        `;
-        container.appendChild(div);
-    });
-}
-
-window.продажаВещи = function(index, sellPrice) {
-    // Внутренняя функция продажи со склада
-};
-
-window.sellResellerItem = function(index, sellPrice) {
-    clearInterval(resellerTimerInterval);
-    const item = resellerState.inventory.splice(index, 1)[0];
-    resellerState.balance += sellPrice;
-    resellerState.dealsCount++;
-    triggerHaptic('success');
-    saveResellerState();
-    renderResellerInventory();
-    spawnResellerLot();
-};
-
 function triggerHaptic(type = 'light') {
     if (!tg?.HapticFeedback) return;
     if (type === 'light' || type === 'medium' || type === 'heavy') {
@@ -305,6 +167,7 @@ function updateZoomGalleryUI() {
     }
 }
 
+// === ПОДДЕРЖКА СВАЙПОВ ДЛЯ ФОТО В ЛАЙТБОКСЕ ===
 let touchStartX = 0;
 let touchEndX = 0;
 
@@ -954,3 +817,138 @@ function handleZoomSwipe() {
         }
     }
 }
+
+// Функции для Симулятора Реселлера
+const resellerTemplates = [
+    { title: "Stone Island Zip Hoodie", img: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300", minPrice: 120, maxPrice: 280, desc: "Состояние 9/10, бирки на месте. Продавец срочно отдает." },
+    { title: "Nike Air Force 1 Low", img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300", minPrice: 80, maxPrice: 180, desc: "Немного б/у, но подошва в отличном состоянии." },
+    { title: "Rick Owens Ramones", img: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?w=300", minPrice: 250, maxPrice: 600, desc: "Редкая пара, есть небольшая потертость на носке." },
+    { title: "Carhartt WIP Jacket", img: "https://images.unsplash.com/photo-1548883354-7622d03aca27?w=300", minPrice: 100, maxPrice: 220, desc: "Винтажная рабочая куртка, плотный хлопок." },
+    { title: "Adidas Samba OG", img: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=300", minPrice: 90, maxPrice: 190, desc: "Классика, состояние идеальное, коробка есть." },
+    { title: "Supreme Box Logo Tee", img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300", minPrice: 150, maxPrice: 350, desc: "Лимитка с коллаборации, без следов носки." }
+];
+
+let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
+    balance: 400,
+    dealsCount: 0,
+    inventory: []
+};
+let currentResellerLot = null;
+let resellerTimerInterval = null;
+
+function saveResellerState() {
+    localStorage.setItem('reseller_state', JSON.stringify(resellerState));
+    updateResellerUI();
+}
+
+function updateResellerUI() {
+    const balEl = document.getElementById('reseller-balance');
+    const dealsEl = document.getElementById('reseller-deals-count');
+    if (balEl) balEl.textContent = `${resellerState.balance} BYN`;
+    if (dealsEl) dealsEl.textContent = resellerState.dealsCount;
+    renderResellerInventory();
+}
+
+function spawnResellerLot() {
+    const cardArea = document.getElementById('reseller-game-area');
+    if (!cardArea) return;
+
+    if (resellerState.balance <= 0 && resellerState.inventory.length === 0) {
+        cardArea.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff3b30; font-weight: 700;">Вы банкрот! Баланс 0 BYN. <br><button class="btn-primary" onclick="resetResellerGame()" style="margin-top:10px;">Начать заново</button></div>`;
+        return;
+    }
+
+    const template = resellerTemplates[Math.floor(Math.random() * resellerTemplates.length)];
+    const buyPrice = Math.floor(Math.random() * (template.maxPrice - template.minPrice) + template.minPrice);
+    const marketMultiplier = (Math.random() * 0.8 + 0.7);
+    const marketValue = Math.floor(buyPrice * marketMultiplier + (Math.random() * 60 - 20));
+
+    currentResellerLot = {
+        id: Date.now(),
+        title: template.title,
+        img: template.img,
+        desc: template.desc,
+        buyPrice: buyPrice,
+        marketValue: Math.max(40, marketValue)
+    };
+
+    const imgEl = document.getElementById('reseller-lot-img');
+    const titleEl = document.getElementById('reseller-lot-title');
+    const descEl = document.getElementById('reseller-lot-desc');
+    const priceEl = document.getElementById('reseller-lot-price');
+    const marketEl = document.getElementById('reseller-lot-market');
+
+    if (imgEl) imgEl.src = currentResellerLot.img;
+    if (titleEl) titleEl.textContent = currentResellerLot.title;
+    if (descEl) descEl.textContent = currentResellerLot.desc;
+    if (priceEl) priceEl.textContent = `${currentResellerLot.buyPrice} BYN`;
+    if (marketEl) marketEl.textContent = `~${currentResellerLot.marketValue} BYN`;
+
+    startResellerTimer(10);
+}
+
+function startResellerTimer(seconds) {
+    let timeLeft = seconds;
+    const bar = document.getElementById('reseller-timer-bar');
+    if (!bar) return;
+
+    clearInterval(resellerTimerInterval);
+    bar.style.width = '100%';
+
+    resellerTimerInterval = setInterval(() => {
+        timeLeft--;
+        let percent = (timeLeft / seconds) * 100;
+        bar.style.width = `${percent}%`;
+
+        if (timeLeft <= 0) {
+            clearInterval(resellerTimerInterval);
+            triggerHaptic('warning');
+            spawnResellerLot();
+        }
+    }, 1000);
+}
+
+window.resetResellerGame = function() {
+    resellerState = { balance: 400, dealsCount: 0, inventory: [] };
+    saveResellerState();
+    location.reload();
+};
+
+function renderResellerInventory() {
+    const container = document.getElementById('reseller-inventory');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (resellerState.inventory.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">Склад пуст. Купите вещи на рынке выше!</div>';
+        return;
+    }
+
+    resellerState.inventory.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'reseller-item-card';
+        
+        let sellOffer = Math.floor(item.marketValue * (Math.random() * 0.3 + 0.85));
+        let profit = sellOffer - item.buyPrice;
+        let profitColor = profit >= 0 ? '#34c759' : '#ff3b30';
+
+        div.innerHTML = `
+            <img class="reseller-item-img" src="${item.img}" alt="${item.title}">
+            <div style="font-weight: 700; font-size: 13px; margin-bottom: 2px;">${item.title}</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">Покупка: ${item.buyPrice} BYN</div>
+            <button class="btn-primary" style="padding: 6px; font-size: 12px; border:none; outline:none;" onclick="sellResellerItem(${index}, ${sellOffer})">Продать за ${sellOffer} BYN <br><span style="font-size: 10px; color:${profitColor};">(${profit >= 0 ? '+' : ''}${profit} BYN)</span></button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+window.sellResellerItem = function(index, sellPrice) {
+    clearInterval(resellerTimerInterval);
+    const item = resellerState.inventory.splice(index, 1)[0];
+    resellerState.balance += sellPrice;
+    resellerState.dealsCount++;
+    triggerHaptic('success');
+    saveResellerState();
+    renderResellerInventory();
+    spawnResellerLot();
+};
