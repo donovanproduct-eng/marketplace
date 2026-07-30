@@ -61,6 +61,7 @@ let currentFilters = {
     sort: 'default',
     priceMin: '',
     priceMax: '',
+    currency: 'all',
     size: '',
     minRating: 0
 };
@@ -1157,7 +1158,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('hidden');
 }
 
 // === УМНАЯ ФИЛЬТРАЦИЯ И СОРТИРОВКА ===
@@ -1180,8 +1181,15 @@ function filterAndRender() {
         // Фильтр по городу
         let matchesCity = currentFilters.city === 'all' || (product.city || 'Минск') === currentFilters.city;
 
+        // Валюта товара и цена
+        let rawPriceStr = product.price || '0';
+        let rawPriceNum = parseFloat(rawPriceStr.replace(/[^\d.]/g, '')) || 0;
+        let productCurrency = rawPriceStr.includes('₽') || rawPriceStr.includes('RUB') ? '₽' : 'BYN';
+
+        // Фильтр по выбранной валюте в поиске
+        let matchesCurrency = currentFilters.currency === 'all' || productCurrency === currentFilters.currency;
+
         // Фильтр по минимальной цене
-        let rawPriceNum = parseFloat((product.price || '0').replace(/[^\d.]/g, '')) || 0;
         let matchesPriceMin = currentFilters.priceMin === '' || rawPriceNum >= parseFloat(currentFilters.priceMin);
         
         // Фильтр по максимальной цене
@@ -1209,7 +1217,7 @@ function filterAndRender() {
             matchesRating = sellerReviews.length > 0 && avgRating >= currentFilters.minRating;
         }
 
-        return matchesQuery && matchesCat && matchesCity && matchesPriceMin && matchesPriceMax && matchesSize && matchesRating;
+        return matchesQuery && matchesCat && matchesCity && matchesCurrency && matchesPriceMin && matchesPriceMax && matchesSize && matchesRating;
     });
 
     // Сортировка
@@ -1528,11 +1536,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (openFiltersBtn && filtersModal) {
         openFiltersBtn.onclick = () => {
             triggerHaptic('light');
-            // Подтягиваем текущие значения в поля модалки
             document.getElementById('filter-city-select').value = currentFilters.city;
             document.getElementById('filter-sort-select').value = currentFilters.sort;
             document.getElementById('filter-price-min').value = currentFilters.priceMin;
             document.getElementById('filter-price-max').value = currentFilters.priceMax;
+            document.getElementById('filter-currency-select').value = currentFilters.currency;
             document.getElementById('filter-size-input').value = currentFilters.size;
             document.getElementById('filter-rating-select').value = currentFilters.minRating;
 
@@ -1547,6 +1555,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentFilters.sort = document.getElementById('filter-sort-select').value;
             currentFilters.priceMin = document.getElementById('filter-price-min').value.trim();
             currentFilters.priceMax = document.getElementById('filter-price-max').value.trim();
+            currentFilters.currency = document.getElementById('filter-currency-select').value;
             currentFilters.size = document.getElementById('filter-size-input').value.trim();
             currentFilters.minRating = parseFloat(document.getElementById('filter-rating-select').value) || 0;
 
@@ -1562,6 +1571,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('filter-sort-select').value = 'default';
             document.getElementById('filter-price-min').value = '';
             document.getElementById('filter-price-max').value = '';
+            document.getElementById('filter-currency-select').value = 'all';
             document.getElementById('filter-size-input').value = '';
             document.getElementById('filter-rating-select').value = '0';
 
@@ -1570,6 +1580,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sort: 'default',
                 priceMin: '',
                 priceMax: '',
+                currency: 'all',
                 size: '',
                 minRating: 0
             };
