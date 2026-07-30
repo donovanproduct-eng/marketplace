@@ -53,13 +53,11 @@
         <!-- Вкладка: Все объявления -->
         <div id="tab-home" class="tab-content">
             <div class="header">
-                <!-- Строка поиска на всю ширину + кнопка фильтров и смены темы -->
                 <div class="search-row">
                     <input type="text" class="search-input" placeholder="Поиск товаров...">
                     <button id="open-filters-btn" class="theme-btn" style="border: none; outline: none;" title="Фильтры">⚙️</button>
                     <button id="theme-toggle" class="theme-btn" style="border: none; outline: none;">🌙</button>
                 </div>
-                <!-- Категории + Избранное -->
                 <div class="categories-bar">
                     <button class="cat-btn active" data-cat="all">Все</button>
                     <button class="cat-btn fav-cat-btn" data-cat="favorites">❤️ Избранное</button>
@@ -150,10 +148,11 @@
             </button>
         </nav>
 
-        <button id="open-modal-btn" class="add-btn" style="display: none; border: none; outline: none;">+</button>
+        <!-- Кнопка плюс (управляется через класс hidden) -->
+        <button id="open-modal-btn" class="add-btn hidden" style="border: none; outline: none;">+</button>
     </div>
 
-    <!-- Модальное окно: Расширенный фильтр (в стиле Avito/Kufar) -->
+    <!-- Модальное окно: Расширенный фильтр -->
     <div id="filters-modal" class="modal hidden">
         <div class="modal-content">
             <h2 style="margin-top: 0; margin-bottom: 15px;">Фильтры поиска</h2>
