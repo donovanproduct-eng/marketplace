@@ -1455,6 +1455,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevImgBtn = document.getElementById('prev-img-btn');
     const nextImgBtn = document.getElementById('next-img-btn');
 
+    // === СЛУШАТЕЛЬ ВЫБОРА КАТЕГОРИИ ===
     const categorySelectEl = document.getElementById('category-select');
     if (categorySelectEl) {
         categorySelectEl.addEventListener('change', (e) => {
@@ -1600,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     price: finalPrice,
                     category: categorySelect.value,
                     subcategory: subcategoryVal,
-                    size: sizeVal, // Сохраняем выбранный размер
+                    size: sizeVal,
                     city: citySelect.value,
                     seller: sellerInput.value.trim() || 'Частное лицо',
                     telegram: telegramInput.value.trim(),
