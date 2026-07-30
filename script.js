@@ -20,31 +20,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Коррекция времени относительно сервера (синхронизация)
-let serverTimeOffset = 0;
-
-async function syncServerTime() {
-    try {
-        const start = Date.now();
-        // Записываем и сразу удаляем временный документ для получения серверного timestamp
-        const ref = await db.collection("timeSync").add({ timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-        const doc = await ref.get();
-        const serverTimestamp = doc.data().timestamp.toMillis();
-        const end = Date.now();
-        const rtt = (end - start) / 2; // Учитываем задержку сети
-        
-        serverTimeOffset = (serverTimestamp + rtt) - Date.now();
-        ref.delete().catch(() => {});
-    } catch (e) {
-        console.warn("Не удалось синхронизировать время с сервером, используется локальное:", e);
-        serverTimeOffset = 0;
-    }
-}
-
-function getSyncedTime() {
-    return Date.now() + serverTimeOffset;
-}
-
 // === ЗВУКОВЫЕ ЭФФЕКТЫ ЧЕРЕЗ WEB AUDIO API ===
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -1689,10 +1664,9 @@ function compressImage(file, callback) {
     reader.readAsDataURL(file);
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
     checkAuth();
-    await syncServerTime(); // Синхронизируем время при старте
     listenFirebaseProducts();
     listenFirebaseReviews();
     listenFirebaseViews();
@@ -2398,7 +2372,7 @@ function handleZoomSwipe() {
     }
 }
 
-// === СИМУЛЯТОР РЕСЕЛЛЕРА (СИНХРОНИЗИРОВАННЫЕ КВЕСТЫ) ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА (ТОРГ РАЗ В 5 ПРОДАЖ, СУТОЧНЫЕ КВЕСТЫ ПО ЕДИНОМУ ВРЕМЕНИ) ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
@@ -2430,6 +2404,12 @@ function saveResellerState() {
     updateResellerUI();
 }
 
+// Возвращает timestamp сегодняшней полуночи (00:00:00 UTC) для синхронизации у всех игроков
+function getTodayMidnightTimestamp() {
+    const now = new Date();
+    return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0);
+}
+
 function checkAndResetDailyQuests() {
     const currentMidnight = getTodayMidnightTimestamp();
     if (resellerState.dailyQuests.lastResetTime < currentMidnight) {
@@ -2452,7 +2432,7 @@ function checkDailyQuestProgress(questKey, amount = 1) {
 
 function updateQuestsTimerUI() {
     checkAndResetDailyQuests();
-    const now = getSyncedTime();
+    const now = Date.now();
     const twentyFourHours = 24 * 60 * 60 * 1000;
     const currentMidnight = getTodayMidnightTimestamp();
     const nextMidnight = currentMidnight + twentyFourHours;
@@ -2824,6 +2804,7 @@ window.cleanResellerItem = function(index, cost) {
     renderResellerInventory();
 };
 
+// === МЕХАНИКА ТОРГА (РАЗ В 5 ПРОДАЖ, РАНДОМ ПЛЮС/МИНУС) ===
 window.trySellWithHaggling = function(index, baseSellPrice) {
     let item = resellerState.inventory[index];
     
@@ -2833,6 +2814,7 @@ window.trySellWithHaggling = function(index, baseSellPrice) {
 
     resellerState.hagglingCounter++;
 
+    // Торг происходит примерно каждый 5-й проданный товар
     if (resellerState.hagglingCounter >= 5) {
         resellerState.hagglingCounter = 0;
         
