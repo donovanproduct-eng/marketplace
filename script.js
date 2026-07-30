@@ -45,10 +45,9 @@ function playSound(type) {
         osc.start(now);
         osc.stop(now + 0.05);
     } else if (type === 'coin') {
-        // Звон монетки при продаже или награде
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(987.77, now); // B5
-        osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+        osc.frequency.setValueAtTime(987.77, now); 
+        osc.frequency.setValueAtTime(1318.51, now + 0.08); 
         gain.gain.setValueAtTime(0.1, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
         osc.start(now);
@@ -2373,7 +2372,7 @@ function handleZoomSwipe() {
     }
 }
 
-// === СИМУЛЯТОР РЕСЕЛЛЕРА (МАКСИМАЛЬНЫЙ УРОВЕНЬ СКЛАДА + СУТОЧНЫЕ КВЕСТЫ С ТАЙМЕРОМ) ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА + СИСТЕМА ТОРГА ПРИ ПРОДАЖЕ ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
@@ -2471,7 +2470,6 @@ function renderWarehouseBar() {
     let title = resellerState.warehouseLevel === 3 ? '🏬 Мега-молл' : (resellerState.warehouseLevel === 2 ? '🏛️ Бутик' : (resellerState.warehouseLevel === 1 ? '🏢 Шоурум' : '🏠 Гараж'));
     let nextCost = resellerState.warehouseLevel === 0 ? 1000 : (resellerState.warehouseLevel === 1 ? 3000 : (resellerState.warehouseLevel === 2 ? 7500 : 0));
 
-    // Убран сброс: на максимуме горит зеленый значок "Максимум уровня" без кнопок
     let upgradeBtnHtml = resellerState.warehouseLevel < 3 ? 
         `<button class="warehouse-upgrade-btn" onclick="upgradeWarehouse(${nextCost})">Улучшить за ${nextCost} BYN</button>` : 
         `<span style="font-size:12px; color:#34c759; font-weight:800; background:rgba(52,199,89,0.12); padding:6px 10px; border-radius:8px;">✓ Максимум</span>`;
@@ -2501,7 +2499,6 @@ window.upgradeWarehouse = function(cost) {
     alert('Поздравляем! Склад успешно улучшен!');
 };
 
-// === ПАНЕЛЬ СУТОЧНЫХ КВЕСТОВ С ТАЙМЕРОМ ===
 function renderAchievementsWidget() {
     let achContainer = document.getElementById('achievements-widget');
     if (!achContainer) {
@@ -2752,7 +2749,6 @@ function renderResellerInventory() {
         
         let sellOffer = item.fixedSellPrice;
         let profit = sellOffer - item.buyPrice;
-        let profitColor = profit >= 0 ? '#34c759' : '#ff3b30';
 
         let fakeBadgeHtml = item.isFake ? `<div class="fake-badge">⚠️ ПАЛЕНКА</div>` : '';
         let cleanBadgeHtml = item.isCleaned ? `<div class="clean-badge">✨ РЕМОНТ</div>` : '';
@@ -2768,7 +2764,7 @@ function renderResellerInventory() {
             <div style="font-weight: 700; font-size: 13px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</div>
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Покупка: ${item.buyPrice} BYN</div>
             ${cleanBtnHtml}
-            <button class="reseller-btn-sell" onclick="sellResellerItem(${index}, ${sellOffer})">
+            <button class="reseller-btn-sell" onclick="trySellWithHaggling(${index}, ${sellOffer})">
                 Продать за ${sellOffer} BYN<br>
                 <span style="font-size: 11px; color: ${profit >= 0 ? '#d4edda' : '#f8d7da'}; font-weight: 600;">(${profit >= 0 ? '+' : ''}${profit} BYN)</span>
             </button>
@@ -2799,7 +2795,37 @@ window.cleanResellerItem = function(index, cost) {
     renderResellerInventory();
 };
 
-window.sellResellerItem = function(index, sellPrice) {
+// === МЕХАНИКА ТОРГА С ПОКУПАТЕЛЕМ ===
+window.trySellWithHaggling = function(index, baseSellPrice) {
+    let item = resellerState.inventory[index];
+    
+    // С вероятностью 45% покупатель устраивает торг
+    let isHaggling = Math.random() < 0.45;
+
+    if (isHaggling) {
+        // Покупатель просит скидку 10-20%
+        let discountPercent = Math.random() * 0.1 + 0.1; 
+        let hagglePrice = Math.floor(baseSellPrice * (1 - discountPercent));
+        let diff = baseSellPrice - hagglePrice;
+
+        let hagglingPrompt = confirm(`💬 Покупатель пишет в чат:\n«Привет! Готов забрать "${item.title}" прямо сейчас за ${hagglePrice} BYN (-${diff} BYN от твоей цены)?»\n\nНажмите «OK», чтобы согласиться на сделку.\nНажмите «Отмена», чтобы отказаться и ждать другого клиента.`);
+
+        if (hagglingPrompt) {
+            // Игрок согласился на торг (продает дешевле)
+            executeSale(index, hagglePrice, true);
+        } else {
+            // Игрок отказался — покупатель уходит, но есть шанс, что цена изменится или товар останется
+            triggerHaptic('warning');
+            playSound('error');
+            alert('Покупатель отказался от вашей цены и ушел. Попробуйте продать товар позже!');
+        }
+    } else {
+        // Обычная успешная продажа по полной цене
+        executeSale(index, baseSellPrice, false);
+    }
+};
+
+function executeSale(index, sellPrice, wasHaggled) {
     clearInterval(resellerTimerInterval);
     const item = resellerState.inventory.splice(index, 1)[0];
     resellerState.balance += sellPrice;
@@ -2812,4 +2838,10 @@ window.sellResellerItem = function(index, sellPrice) {
     saveResellerState();
     renderResellerInventory();
     spawnResellerLot();
-};
+
+    if (wasHaggled) {
+        alert(`🤝 Сделка закрыта по предложенной цене: +${sellPrice} BYN!`);
+    } else {
+        alert(`🎉 Товар успешно продан за ${sellPrice} BYN!`);
+    }
+}
