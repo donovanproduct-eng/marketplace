@@ -97,10 +97,10 @@
 
                 <div id="profile-badge" class="profile-badge unverified">❌ Профиль не подтвержден</div>
                 
-                <!-- Кнопки управления профилем (подняты выше и отцентрованы) -->
-                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 4px;">
-                    <button id="open-verify-btn" class="btn-secondary" onclick="openVerifyModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 8px 16px;">Верификация</button>
-                    <button id="open-edit-profile-btn" class="btn-secondary" onclick="openSettingsModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 8px 16px;">⚙️ Настройки</button>
+                <!-- Кнопки управления профилем (ОТРИЦАТЕЛЬНЫЙ ОТСТУП ДЛЯ ПОДНЯТИЯ) -->
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: -12px; margin-bottom: 12px; position: relative; z-index: 2;">
+                    <button id="open-verify-btn" class="btn-secondary" onclick="openVerifyModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">Верификация</button>
+                    <button id="open-edit-profile-btn" class="btn-secondary" onclick="openSettingsModal()" style="font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 6px 16px; min-height: 0; line-height: normal;">⚙️ Настройки</button>
                 </div>
 
                 <div class="rating-box">
@@ -248,7 +248,6 @@
                 <option value="Другое" selected>📦 Другое</option>
             </select>
 
-            <!-- Выбор подкатегории (по умолчанию скрыт) -->
             <div id="subcategory-container" style="display: none; margin-bottom: 12px;">
                 <select id="subcategory-select" class="select-input"></select>
             </div>
