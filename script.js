@@ -29,7 +29,6 @@ const subcategoriesMap = {
     "Другое": [] 
 };
 
-// Чистые значения размеров для одежды и обуви (с половинками)
 const clothingSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "Оверсайз / Универсальный"];
 const shoeSizes = [
     "35", "35.5", "36", "36.5", "37", "37.5", "38", "38.5", "39", "39.5", 
@@ -102,7 +101,6 @@ function updateRatingUI(reviewsArray, scoreId, starsId, countId) {
     }
 }
 
-// Динамическое обновление подкатегорий и размеров
 function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSize = '') {
     const subContainer = document.getElementById('subcategory-container');
     const subSelect = document.getElementById('subcategory-select');
@@ -136,7 +134,7 @@ function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSi
         targetSizes.forEach(sz => {
             const opt = document.createElement('option');
             opt.value = sz;
-            opt.textContent = sz; // Чистое значение без лишних префиксов
+            opt.textContent = sz;
             sizeSelect.appendChild(opt);
         });
 
@@ -150,7 +148,6 @@ function updateSubcategories(categoryValue, selectedSubcategory = '', selectedSi
     }
 }
 
-// ПОДПИСКА НА FIREBASE
 function listenFirebaseProducts() {
     db.collection("products")
       .orderBy("createdAt", "desc")
@@ -1456,7 +1453,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevImgBtn = document.getElementById('prev-img-btn');
     const nextImgBtn = document.getElementById('next-img-btn');
 
-    // Слушатель выбора основной категории
     const categorySelectEl = document.getElementById('category-select');
     if (categorySelectEl) {
         categorySelectEl.addEventListener('change', (e) => {
@@ -1624,9 +1620,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         await db.collection("products").add(productData);
                     }
                 } catch (err) {
-                    // Выводим точную ошибку в консоль браузера для диагностики
+                    // ТЕПЕРЬ ОШИБКА ПОКАЖЕТСЯ НА ЭКРАНЕ ТЕЛЕФОНА
                     console.error("Firebase save error details:", err);
-                    alert("Ошибка публикации! Проверьте консоль.");
+                    alert("Ошибка публикации: " + err.message);
                 }
             };
 
