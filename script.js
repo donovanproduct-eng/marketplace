@@ -49,6 +49,7 @@ function triggerHaptic(type = 'light') {
 let products = [];
 let allReviews = [];
 let myPurchases = [];
+let allProductViews = []; // Кеш для просмотров
 
 let currentUser = JSON.parse(localStorage.getItem('my_marketplace_user')) || null;
 let favorites = currentUser ? (JSON.parse(localStorage.getItem(`favs_${currentUser.username}`)) || []) : [];
@@ -224,6 +225,18 @@ function listenFirebaseReviews() {
       });
 }
 
+function listenFirebaseViews() {
+    db.collection("productViews")
+      .onSnapshot((snapshot) => {
+          allProductViews = [];
+          snapshot.forEach((doc) => {
+              allProductViews.push({ id: doc.id, ...doc.data() });
+          });
+      }, (err) => {
+          console.error("Ошибка Firebase (просмотры):", err);
+      });
+}
+
 function listenFirebasePurchases() {
     if (!currentUser || !currentUser.username) return;
     const cleanMyTg = currentUser.username.replace('@', '').toLowerCase();
@@ -377,7 +390,7 @@ function checkAuth() {
     } else {
         authScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
-        setupAuthServer();
+        setupAuthScreen();
     }
 }
 
@@ -508,7 +521,7 @@ function renderPurchasesTab() {
         card.innerHTML = `
             <img class="product-image" src="${mainImage}" alt="${item.title}">
             <div class="product-title">${item.title}</div>
-            <div class="product-city">📍 ${item.city || 'Минск'}</div>
+            <div class="product-city">${item.city || 'Минск'}</div>
             <div class="product-price">${item.price}</div>
         `;
         container.appendChild(card);
@@ -533,26 +546,11 @@ function setupViewModalCommon(product) {
     document.getElementById('view-title').textContent = product.title;
     document.getElementById('view-price').textContent = product.price; 
     document.getElementById('view-category').textContent = categoryText;
-    document.getElementById('view-city').textContent = `📍 ${product.city || 'Минск'}`;
+    // Убираем булавку/чупа-чупс, оставляем только текст города
+    document.getElementById('view-city').textContent = product.city || 'Минск';
     document.getElementById('view-seller').textContent = product.seller || 'Продавец';
     
-    // Подсчет, у какого количества пользователей этот товар в избранном
-    let likesCount = 0;
-    products.forEach(p => {
-        // Проверяем локальные списки (в реальном проекте можно считать по базе, но для мини-приложения отлично работает подсчет по загруженным юзерам)
-    });
-    // Добавим красивый информационный блок с лайками в описание или под цену
-    let existingLikesInfo = document.getElementById('view-likes-info');
-    if (!existingLikesInfo) {
-        existingLikesInfo = document.createElement('div');
-        existingLikesInfo.id = 'view-likes-info';
-        existingLikesInfo.style.fontSize = '12px';
-        existingLikesInfo.style.color = 'var(--text-muted)';
-        existingLikesInfo.style.marginBottom = '8px';
-        document.getElementById('view-title').insertAdjacentElement('beforebegin', existingLikesInfo);
-    }
-    
-    // Считаем сколько раз ID этого товара встречается в избранном (через localStorage или общие данные)
+    // Считаем лайки и просмотры для этого товара
     let totalLikes = 0;
     for (let i = 0; i < localStorage.length; i++) {
         let key = localStorage.key(i);
@@ -563,8 +561,20 @@ function setupViewModalCommon(product) {
             } catch(e) {}
         }
     }
-    if (favorites.includes(product.id) && totalLikes === 0) totalLikes = 1; // хотя бы текущий юзер
-    existingLikesInfo.innerHTML = `❤️ Добавили в избранное: ${totalLikes} чел.`;
+    if (favorites.includes(product.id) && totalLikes === 0) totalLikes = 1;
+
+    let totalViews = allProductViews.filter(v => v.productId === product.id).length;
+
+    let existingLikesInfo = document.getElementById('view-likes-info');
+    if (!existingLikesInfo) {
+        existingLikesInfo = document.createElement('div');
+        existingLikesInfo.id = 'view-likes-info';
+        existingLikesInfo.style.fontSize = '12px';
+        existingLikesInfo.style.color = 'var(--text-muted)';
+        existingLikesInfo.style.marginBottom = '8px';
+        document.getElementById('view-title').insertAdjacentElement('beforebegin', existingLikesInfo);
+    }
+    existingLikesInfo.innerHTML = `❤️ В избранном: ${totalLikes} чел. &nbsp;&nbsp;|&nbsp;&nbsp; 👁️ Просмотров: ${totalViews}`;
 
     let rawTg = product.telegram ? String(product.telegram).trim() : '';
     if (rawTg.includes('t.me/')) {
@@ -798,7 +808,6 @@ function renderMyProductsTab() {
         const isFav = favorites.includes(item.id);
         const mainImage = item.images[0];
         
-        // Считаем количество лайков для каждого товара
         let itemLikes = 0;
         for (let i = 0; i < localStorage.length; i++) {
             let key = localStorage.key(i);
@@ -809,6 +818,7 @@ function renderMyProductsTab() {
                 } catch(e) {}
             }
         }
+        let itemViews = allProductViews.filter(v => v.productId === item.id).length;
 
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -819,10 +829,10 @@ function renderMyProductsTab() {
             <button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>
             <img class="product-image" src="${mainImage}" alt="${item.title}">
             <div class="product-title">${item.title}</div>
-            <div class="product-city">📍 ${item.city || 'Минск'}</div>
+            <div class="product-city">${item.city || 'Минск'}</div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 8px 10px 8px;">
                 <div class="product-price" style="margin: 0;">${item.price}</div>
-                <div style="font-size: 11px; color: var(--text-muted);">❤️ ${itemLikes}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">❤️ ${itemLikes} &nbsp; 👁️ ${itemViews}</div>
             </div>
         `;
         container.appendChild(card);
@@ -898,7 +908,7 @@ function renderProfile() {
                     <button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>
                     <img class="product-image" src="${mainImage}" alt="${item.title}">
                     <div class="product-title">${item.title}</div>
-                    <div class="product-city">📍 ${item.city || 'Минск'}</div>
+                    <div class="product-city">${item.city || 'Минск'}</div>
                     <div class="product-price">${item.price}</div>
                 `;
                 myContainer.appendChild(card);
@@ -939,7 +949,7 @@ function renderPublicProfileProducts(sellerTelegram) {
             <button class="fav-btn" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '❤️' : '🤍'}</button>
             <img class="product-image" src="${mainImage}" alt="${item.title}">
             <div class="product-title">${item.title}</div>
-            <div class="product-city">📍 ${item.city || 'Минск'}</div>
+            <div class="product-city">${item.city || 'Минск'}</div>
             <div class="product-price">${item.price}</div>
         `;
         container.appendChild(card);
@@ -1105,7 +1115,7 @@ async function finalizeProductDeletion(buyerUsername) {
     }
 
     pendingDeleteId = null;
-}
+};
 
 window.handleTelegramClick = function(event, rawTg, productTitle, productPrice) {
     if (event) event.preventDefault();
@@ -1213,7 +1223,7 @@ function openAddModal() {
     document.getElementById('image-file-input').value = '';
     document.getElementById('file-name').textContent = 'Файлы не выбраны';
 
-    document.getElementById('modal').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
 }
 
 // === УМНАЯ ФИЛЬТРАЦИЯ И СОРТИРОВКА ===
@@ -1319,7 +1329,7 @@ function renderProducts(itemsToRender) {
             ${isMyProduct ? `<button class="delete-btn" onclick="deleteProduct(event, '${item.id}')">✕</button>` : ''}
             <img class="product-image" src="${mainImage}" alt="${item.title}">
             <div class="product-title">${item.title}</div>
-            <div class="product-city">📍 ${item.city || 'Минск'}</div>
+            <div class="product-city">${item.city || 'Минск'}</div>
             <div class="product-price">${item.price}</div>
         `;
         container.appendChild(card);
@@ -1371,6 +1381,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     listenFirebaseProducts();
     listenFirebaseReviews();
+    listenFirebaseViews();
 
     const closeVBtn = document.getElementById('close-view-btn');
     if (closeVBtn) {
