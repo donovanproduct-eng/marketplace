@@ -202,7 +202,15 @@
         <div class="modal-content">
             <h2 id="modal-title">Добавить объявление</h2>
             <input type="text" id="title-input" placeholder="Название товара">
-            <input type="text" id="price-input" placeholder="Цена (например: 2500)">
+            
+            <!-- НОВЫЙ БЛОК ВВОДА ЦЕНЫ С ВЫБОРОМ ВАЛЮТЫ -->
+            <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                <input type="number" id="price-input" placeholder="Цена (только цифры)" style="flex: 2; margin-bottom: 0;">
+                <select id="currency-select" class="select-input" style="flex: 1; margin-bottom: 0;">
+                    <option value="BYN" selected>BYN</option>
+                    <option value="₽">₽ (RUB)</option>
+                </select>
+            </div>
             
             <select id="category-select" class="select-input">
                 <option value="Электроника">📱 Электроника</option>
@@ -253,7 +261,7 @@
                 <span id="view-city" class="view-city-badge">📍 Минск</span>
             </div>
 
-            <div id="view-price" class="view-price">0 ₽</div>
+            <div id="view-price" class="view-price">0 BYN</div>
             <h3 id="view-title" class="view-title">Название товара</h3>
 
             <!-- Карточка продавца -->
