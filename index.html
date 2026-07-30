@@ -157,7 +157,7 @@
             <h2 style="margin-top: 0; margin-bottom: 15px;">Фильтры поиска</h2>
             
             <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Город</label>
-            <select id="filter-city-select" class="select-input">
+            <select id="filter-city-select" class="select-input" style="margin-bottom: 8px;">
                 <option value="all">Все города</option>
                 <option value="Минск">Минск</option>
                 <option value="Гродно">Гродно</option>
@@ -165,7 +165,9 @@
                 <option value="Гомель">Гомель</option>
                 <option value="Витебск">Витебск</option>
                 <option value="Могилев">Могилев</option>
+                <option value="custom">✍️ Другой город (вписать)</option>
             </select>
+            <input type="text" id="filter-custom-city-input" placeholder="Введите название города..." class="auth-input hidden" style="margin-bottom: 12px;">
 
             <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Сортировка цены</label>
             <select id="filter-sort-select" class="select-input">
@@ -306,7 +308,6 @@
                 <select id="size-select" class="select-input"></select>
             </div>
 
-            <!-- Выбор города + поле для своего города -->
             <select id="city-select" class="select-input" style="margin-bottom: 8px;">
                 <option value="Минск" selected>Минск</option>
                 <option value="Гродно">Гродно</option>
@@ -316,7 +317,6 @@
                 <option value="Могилев">Могилев</option>
                 <option value="custom">✍️ Другой город (вписать)</option>
             </select>
-
             <input type="text" id="custom-city-input" placeholder="Введите ваш город или область..." class="auth-input hidden" style="margin-bottom: 12px;">
 
             <input type="text" id="seller-input" placeholder="Имя продавца">
