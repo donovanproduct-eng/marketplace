@@ -36,13 +36,13 @@
                         <div id="auth-username" class="preview-username">@username</div>
                     </div>
                 </div>
-                <button id="tg-login-btn" class="auth-btn tg-btn">Войти через Telegram</button>
+                <button id="tg-login-btn" class="auth-btn tg-btn" style="border: none; outline: none;">Войти через Telegram</button>
             </div>
 
             <div id="guest-auth-box" class="auth-box hidden">
                 <input type="text" id="guest-name-input" class="auth-input" placeholder="Ваше имя">
                 <input type="text" id="guest-tg-input" class="auth-input" placeholder="Ваш @username в Telegram">
-                <button id="guest-login-btn" class="auth-btn">Войти</button>
+                <button id="guest-login-btn" class="auth-btn" style="border: none; outline: none;">Войти</button>
             </div>
         </div>
     </div>
@@ -64,7 +64,7 @@
                         <option value="Витебск">Витебск</option>
                         <option value="Могилев">Могилев</option>
                     </select>
-                    <button id="theme-toggle" class="theme-btn">🌙</button>
+                    <button id="theme-toggle" class="theme-btn" style="border: none; outline: none;">🌙</button>
                 </div>
                 <div class="categories-bar">
                     <button class="cat-btn active" data-cat="all">Все</button>
@@ -97,10 +97,10 @@
 
                 <div id="profile-badge" class="profile-badge unverified">❌ Профиль не подтвержден</div>
                 
-                <!-- Кнопки управления профилем -->
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button id="open-verify-btn" class="btn-secondary" style="flex: 1; font-size: 13px;">Верефикация</button>
-                    <button id="open-edit-profile-btn" class="btn-secondary" style="flex: 1; font-size: 13px;">⚙️ Настройки</button>
+                <!-- ИСПРАВЛЕННЫЕ Кнопки управления профилем (без рамок, рабочие функции) -->
+                <div style="display: flex; gap: 10px; margin-top: 12px;">
+                    <button id="open-verify-btn" class="btn-secondary" onclick="openVerifyModal()" style="flex: 1; font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 10px;">Верификация</button>
+                    <button id="open-edit-profile-btn" class="btn-secondary" onclick="openSettingsModal()" style="flex: 1; font-size: 13px; border: none; outline: none; border-radius: 8px; padding: 10px;">⚙️ Настройки</button>
                 </div>
 
                 <div class="rating-box">
@@ -131,6 +131,7 @@
                 <div id="my-products" class="products-grid"></div>
             </div>
 
+            <!-- Секция: Мои покупки -->
             <div id="sec-purchases" class="profile-section hidden">
                 <div id="my-purchases-grid" class="products-grid"></div>
             </div>
@@ -139,7 +140,7 @@
                 <div id="reviews-list" class="reviews-list"></div>
             </div>
 
-            <button id="logout-btn" class="logout-btn" style="width:100%; margin-top:20px;">Выйти из аккаунта</button>
+            <button id="logout-btn" class="logout-btn" style="width:100%; margin-top:20px; border: none; outline: none;">Выйти из аккаунта</button>
         </div>
 
         <!-- Нижняя навигация -->
@@ -158,7 +159,7 @@
             </button>
         </nav>
 
-        <button id="open-modal-btn" class="add-btn" style="display: none;">+</button>
+        <button id="open-modal-btn" class="add-btn" style="display: none; border: none; outline: none;">+</button>
     </div>
 
     <!-- Модалка: Редактирование профиля -->
@@ -168,7 +169,7 @@
             
             <div style="text-align: center; margin-bottom: 15px;">
                 <div id="edit-avatar-preview" class="profile-avatar" style="margin: 0 auto 10px auto; width: 64px; height: 64px; font-size: 32px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f0f0f0;">👤</div>
-                <label class="btn-secondary" for="avatar-file-input" style="display: inline-block; padding: 8px 12px; font-size: 13px; cursor: pointer;">📸 Изменить фото</label>
+                <label class="btn-secondary" for="avatar-file-input" style="display: inline-block; padding: 8px 12px; font-size: 13px; cursor: pointer; border: none; outline: none; border-radius: 8px;">📸 Изменить фото</label>
                 <input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
             </div>
 
@@ -176,8 +177,9 @@
             <textarea id="edit-bio-input" placeholder="Расскажите о себе (например: продаю только оригинальные вещи)..." rows="3" class="auth-input" style="margin-bottom: 15px; resize: none;"></textarea>
 
             <div class="modal-buttons" style="display: flex; gap: 10px;">
-                <button id="close-edit-profile-btn" class="btn-secondary" style="flex:1;">Отмена</button>
-                <button id="save-profile-btn" class="btn-primary" style="flex:1;">Сохранить</button>
+                <!-- Убрал белые рамки -->
+                <button id="close-edit-profile-btn" class="btn-secondary" style="flex:1; border: none; outline: none;">Отмена</button>
+                <button id="save-profile-btn" class="btn-primary" style="flex:1; border: none; outline: none;">Сохранить</button>
             </div>
         </div>
     </div>
@@ -195,8 +197,8 @@
             <input type="text" id="buyer-username-input" class="auth-input" placeholder="@username покупателя" style="margin-bottom: 12px;">
             
             <div class="modal-buttons" style="display: flex; gap: 10px;">
-                <button id="skip-buyer-btn" class="btn-secondary" style="flex:1;">Пропустить</button>
-                <button id="save-buyer-btn" class="btn-primary" style="flex:1;">Готово</button>
+                <button id="skip-buyer-btn" class="btn-secondary" style="flex:1; border: none; outline: none;">Пропустить</button>
+                <button id="save-buyer-btn" class="btn-primary" style="flex:1; border: none; outline: none;">Готово</button>
             </div>
         </div>
     </div>
@@ -219,8 +221,8 @@
             <textarea id="review-text-input" placeholder="Ваш отзыв о сделке..." rows="3" class="auth-input" style="margin-bottom: 12px; resize: none;"></textarea>
 
             <div class="modal-buttons" style="display: flex; gap: 10px;">
-                <button id="cancel-review-btn" class="btn-secondary" style="flex:1;">Позже</button>
-                <button id="submit-review-btn" class="btn-primary" style="flex:1;">Отправить</button>
+                <button id="cancel-review-btn" class="btn-secondary" style="flex:1; border: none; outline: none;">Позже</button>
+                <button id="submit-review-btn" class="btn-primary" style="flex:1; border: none; outline: none;">Отправить</button>
             </div>
         </div>
     </div>
@@ -247,6 +249,7 @@
                 <option value="Другое" selected>📦 Другое</option>
             </select>
 
+            <!-- НОВЫЙ БЛОК: Выбор подкатегории (по умолчанию скрыт) -->
             <div id="subcategory-container" style="display: none; margin-bottom: 12px;">
                 <select id="subcategory-select" class="select-input"></select>
             </div>
@@ -269,8 +272,9 @@
             <div id="file-name" class="file-name">Файлы не выбраны</div>
 
             <div class="modal-buttons">
-                <button id="close-modal-btn" class="btn-secondary">Отмена</button>
-                <button id="save-btn" class="btn-primary">Опубликовать</button>
+                <!-- Убрал белые рамки -->
+                <button id="close-modal-btn" class="btn-secondary" style="border: none; outline: none;">Отмена</button>
+                <button id="save-btn" class="btn-primary" style="border: none; outline: none;">Опубликовать</button>
             </div>
         </div>
     </div>
@@ -278,12 +282,12 @@
     <!-- Модалка: Просмотр товара -->
     <div id="view-modal" class="modal hidden">
         <div class="modal-content view-content">
-            <button id="close-view-btn" class="close-view-btn">✕</button>
+            <button id="close-view-btn" class="close-view-btn" style="border: none; outline: none;">✕</button>
             
             <div class="gallery-container">
-                <button id="prev-img-btn" class="gallery-nav prev-btn">‹</button>
+                <button id="prev-img-btn" class="gallery-nav prev-btn" style="border: none; outline: none;">‹</button>
                 <img id="view-image" class="view-image" src="" alt="Товар">
-                <button id="next-img-btn" class="gallery-nav next-btn">›</button>
+                <button id="next-img-btn" class="gallery-nav next-btn" style="border: none; outline: none;">›</button>
                 <div id="gallery-dots" class="gallery-dots"></div>
             </div>
 
@@ -309,7 +313,7 @@
             <div id="view-desc" class="view-description">Описание отсутствует</div>
 
             <div class="view-actions">
-                <button id="edit-btn" class="edit-view-btn" style="display:none;">✏️ Изменить</button>
+                <button id="edit-btn" class="edit-view-btn" style="display:none; border: none; outline: none;">✏️ Изменить</button>
                 <a id="contact-btn" href="#" class="contact-tg-btn">💬 Написать в Telegram</a>
             </div>
         </div>
@@ -318,7 +322,7 @@
     <!-- Модалка: Просмотр чужого профиля -->
     <div id="public-profile-modal" class="modal hidden">
         <div class="modal-content view-content">
-            <button id="close-public-profile-btn" class="close-view-btn">✕</button>
+            <button id="close-public-profile-btn" class="close-view-btn" style="border: none; outline: none;">✕</button>
 
             <div class="profile-card">
                 <div id="public-user-avatar" class="profile-avatar">👤</div>
@@ -359,12 +363,14 @@
             <h2>Верификация профиля</h2>
             <p class="verify-desc">Подтвердите номер телефона, чтобы получить галочку проверенного продавца.</p>
 
-            <button id="confirm-tg-phone-btn" class="auth-btn tg-btn tg-btn-phone">Поделиться контактом Telegram</button>
+            <button id="confirm-tg-phone-btn" class="auth-btn tg-btn tg-btn-phone" style="border: none; outline: none;">Поделиться контактом Telegram</button>
             <div class="or-divider">или введите вручную</div>
 
             <input type="tel" id="manual-phone-input" class="auth-input" placeholder="+375 (29) 123-45-67" style="margin-bottom: 12px;">
-            <button id="save-manual-phone-btn" class="auth-btn" style="margin-bottom: 12px;">Сохранить номер</button>
-            <button id="close-verify-modal-btn" class="btn-secondary" style="width:100%;">Отмена</button>
+            <button id="save-manual-phone-btn" class="auth-btn" style="margin-bottom: 12px; border: none; outline: none;">Сохранить номер</button>
+            
+            <!-- Убрал белую рамку в кнопке отмены верификации -->
+            <button id="close-verify-modal-btn" class="btn-secondary" style="width:100%; border: none; outline: none;">Отмена</button>
         </div>
     </div>
 
