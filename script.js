@@ -737,7 +737,7 @@ function logoutUser() {
     checkAuth();
 }
 
-// === ЕЖЕДНЕВНЫЙ БОНУС ВАЛЮТЫ ===
+// === ЕЖЕДНЕВНЫЙ БОНУС ВАЛЮТЫ (RC) ===
 window.claimDailyBonus = async function() {
     if (!currentUser) return;
 
@@ -746,7 +746,7 @@ window.claimDailyBonus = async function() {
 
     if (currentUser.lastDailyBonus === todayStr) {
         triggerHaptic('error');
-        alert('Вы уже забирали сегодняшний бонус! Приходите завтра 🎁');
+        alert('Вы уже забирали сегодняшний бонус! Приходите завтра.');
         return;
     }
 
@@ -763,9 +763,48 @@ window.claimDailyBonus = async function() {
             coins: currentUser.coins,
             lastDailyBonus: todayStr
         });
-        alert(`🎉 Вы получили ежедневный бонус: +${reward} Маркет-Коинов!`);
+        alert(`🎉 Вы получили бонус: +${reward} RC!`);
     } catch (e) {
         console.error("Ошибка начисления бонуса:", e);
+    }
+};
+
+// === ПОПОЛНЕНИЕ БАЛАНСА RC (СИСТЕМА ОПЛАТЫ) ===
+window.openTopUpModal = function() {
+    triggerHaptic('light');
+    const topupModal = document.getElementById('topup-modal');
+    if (topupModal) {
+        topupModal.classList.remove('hidden');
+    }
+};
+
+window.closeTopUpModal = function() {
+    triggerHaptic('light');
+    const topupModal = document.getElementById('topup-modal');
+    if (topupModal) {
+        topupModal.classList.add('hidden');
+    }
+};
+
+window.buyCoinsPackage = async function(amount, priceStr) {
+    if (!currentUser) return;
+
+    let isConfirmed = confirm(`Подтвердите покупку пакета ${amount} RC за ${priceStr}.\n\n(В рабочей версии здесь открывается счет Telegram Stars / Банковская карта)`);
+    if (!isConfirmed) return;
+
+    currentUser.coins = (currentUser.coins || 0) + amount;
+    triggerHaptic('success');
+    saveToStorage();
+    renderProfile();
+    closeTopUpModal();
+
+    try {
+        await db.collection("users").doc(currentUser.username.toLowerCase()).update({
+            coins: currentUser.coins
+        });
+        alert(`✅ Успешно зачислено +${amount} RC! Ваш баланс пополнен.`);
+    } catch (e) {
+        console.error("Ошибка пополнения коинов:", e);
     }
 };
 
@@ -1171,7 +1210,7 @@ function renderProfile() {
     nameEl.textContent = currentUser.name;
     tgEl.textContent = `@${currentUser.username}`;
 
-    // ДИНАМИЧЕСКАЯ ГЕРАЦИЯ ВИДЖЕТА БОНУСА (ГАРАНТИРОВАННОЕ ПОЯВЛЕНИЕ)
+    // ДИНАМИЧЕСКАЯ ГЕНЕРАЦИЯ ВИДЖЕТА БАЛАНСА И КНОПОК
     let coinsWidget = document.getElementById('coins-widget-container');
     if (!coinsWidget) {
         coinsWidget = document.createElement('div');
@@ -1187,11 +1226,14 @@ function renderProfile() {
     coinsWidget.innerHTML = `
         <div class="coins-balance-box">
             <span>Баланс:</span>
-            <span id="user-coins-count" class="coins-val">💎 ${currentUser.coins || 0}</span>
+            <span id="user-coins-count" class="coins-val">🌕 ${currentUser.coins || 0} RC</span>
         </div>
-        <button id="daily-bonus-btn" class="daily-bonus-btn" onclick="claimDailyBonus()" ${isBonusClaimed ? 'disabled style="opacity:0.5;"' : ''}>
-            ${isBonusClaimed ? '🎁 Завтра +25 💎' : '🎁 Бонус +25 💎'}
-        </button>
+        <div class="coins-btns-group">
+            <button id="daily-bonus-btn" class="daily-bonus-btn" onclick="claimDailyBonus()" ${isBonusClaimed ? 'disabled style="opacity:0.5;"' : ''}>
+                ${isBonusClaimed ? 'Завтра +25 RC' : 'Бонус +25 RC'}
+            </button>
+            <button id="topup-coins-btn" class="daily-bonus-btn topup-btn" onclick="openTopUpModal()">Пополнить</button>
+        </div>
     `;
 
     if (currentUser.customAvatar) {
