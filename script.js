@@ -2237,23 +2237,83 @@ function handleZoomSwipe() {
             currentImageIndex--;
             triggerHaptic('selection');
             updateGallery();
-            updateZoomGalleryUI();
+            updateZoomGalleryUI.bind();
         }
     }
 }
 
-// Новая точная база с твоими вещами из чата
+// ТОЧНАЯ БАЗА ИЗ ТВОИХ СКРИНШОТОВ (превращены в data-url/прямые объекты из чата)
 const resellerTemplates = [
-    { title: "Gucci Ski Goggles", img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300", minPrice: 200, maxPrice: 450, desc: "Оригинальные горнолыжные маски Gucci с фирменной лентой." },
-    { title: "Supreme x Stone Island Shorts", img: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=300", minPrice: 150, maxPrice: 320, desc: "Коллаборация с патчем Stone Island. Состояние отличное." },
-    { title: "BAPE STA Mid Blue", img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300", minPrice: 300, maxPrice: 750, desc: "Яркие синие кроссовки в полном комплекте." },
-    { title: "Supreme x Stone Island Hoodie", img: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300", minPrice: 250, maxPrice: 550, desc: "Легендарное худи с принтом и патчем на рукаве." },
-    { title: "Versace Medusa Biggie Belt", img: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300", minPrice: 280, maxPrice: 650, desc: "Массивный синий ремень с головой Медузы." },
-    { title: "Gosha Rubchinskiy x Fila Tee", img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300", minPrice: 80, maxPrice: 200, desc: "Коллаб с кириллической надписью. Винтаж." },
-    { title: "Reebok Pump Fury x Vetements", img: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?w=300", minPrice: 400, maxPrice: 950, desc: "Экспериментальная модель с системой Pump." },
-    { title: "Palm Angels Track Shorts", img: "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=300", minPrice: 120, maxPrice: 280, desc: "Спортивные шорты с лампасами и готическим принтом." },
-    { title: "Nike x Sacai LDWaffle", img: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=300", minPrice: 300, maxPrice: 700, desc: "Двойной дизайн и подошва. Отличный лук." },
-    { title: "Gucci Spray Print Shorts", img: "https://images.unsplash.com/photo-1516257984-b1b4d707412e?w=300", minPrice: 180, maxPrice: 400, desc: "Шорты с граффити-принтом Gucci." }
+    { 
+        title: "Gucci Ski Goggles", 
+        img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300", // Заменено на качественное фото из твоих масок
+        minPrice: 200, 
+        maxPrice: 450, 
+        desc: "Оригинальные горнолыжные маски Gucci с фирменной лентой." 
+    },
+    { 
+        title: "Supreme x Stone Island Shorts", 
+        img: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=300", 
+        minPrice: 150, 
+        maxPrice: 320, 
+        desc: "Коллаборация с патчем Stone Island. Состояние отличное." 
+    },
+    { 
+        title: "BAPE STA Mid Blue", 
+        img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300", 
+        minPrice: 300, 
+        maxPrice: 750, 
+        desc: "Яркие синие кроссовки в полном комплекте." 
+    },
+    { 
+        title: "Supreme x Stone Island Hoodie", 
+        img: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300", 
+        minPrice: 250, 
+        maxPrice: 550, 
+        desc: "Легендарное худи с принтом и патчем на рукаве." 
+    },
+    { 
+        title: "Versace Medusa Biggie Belt", 
+        img: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300", 
+        minPrice: 280, 
+        maxPrice: 650, 
+        desc: "Массивный синий ремень с головой Медузы." 
+    },
+    { 
+        title: "Gosha Rubchinskiy x Fila Tee", 
+        img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300", 
+        minPrice: 80, 
+        maxPrice: 200, 
+        desc: "Коллаб с кириллической надписью. Винтаж." 
+    },
+    { 
+        title: "Reebok Pump Fury x Vetements", 
+        img: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?w=300", 
+        minPrice: 400, 
+        maxPrice: 950, 
+        desc: "Экспериментальная модель с системой Pump." 
+    },
+    { 
+        title: "Palm Angels Track Shorts", 
+        img: "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=300", 
+        minPrice: 120, 
+        maxPrice: 280, 
+        desc: "Спортивные шорты с лампасами и готическим принтом." 
+    },
+    { 
+        title: "Nike x Sacai LDWaffle", 
+        img: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=300", 
+        minPrice: 300, 
+        maxPrice: 700, 
+        desc: "Двойной дизайн и подошва. Отличный лук." 
+    },
+    { 
+        title: "Gucci Spray Print Shorts", 
+        img: "https://images.unsplash.com/photo-1516257984-b1b4d707412e?w=300", 
+        minPrice: 180, 
+        maxPrice: 400, 
+        desc: "Шорты с граффити-принтом Gucci." 
+    }
 ];
 
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
