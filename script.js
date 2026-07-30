@@ -2372,12 +2372,13 @@ function handleZoomSwipe() {
     }
 }
 
-// === СИМУЛЯТОР РЕСЕЛЛЕРА + СИСТЕМА ТОРГА ПРИ ПРОДАЖЕ ===
+// === СИМУЛЯТОР РЕСЕЛЛЕРА (ТОРГ РАЗ В 5 ПРОДАЖ НА РАНДОМ ПЛЮС/МИНУС) ===
 let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
     balance: 500,
     dealsCount: 0,
     inventory: [],
     warehouseLevel: 0,
+    hagglingCounter: 0,
     dailyQuests: {
         lastResetTime: Date.now(),
         progress: { sell_2: 0, clean_1: 0, skip_3: 0 },
@@ -2386,6 +2387,7 @@ let resellerState = JSON.parse(localStorage.getItem('reseller_state')) || {
 };
 
 if (resellerState.warehouseLevel === undefined) resellerState.warehouseLevel = 0;
+if (resellerState.hagglingCounter === undefined) resellerState.hagglingCounter = 0;
 if (!resellerState.dailyQuests) {
     resellerState.dailyQuests = {
         lastResetTime: Date.now(),
@@ -2727,6 +2729,7 @@ window.resetResellerGame = function() {
         dealsCount: 0, 
         inventory: [], 
         warehouseLevel: 0, 
+        hagglingCounter: 0,
         dailyQuests: { lastResetTime: Date.now(), progress: { sell_2: 0, clean_1: 0, skip_3: 0 }, claimed: [] } 
     };
     saveResellerState();
@@ -2795,37 +2798,56 @@ window.cleanResellerItem = function(index, cost) {
     renderResellerInventory();
 };
 
-// === МЕХАНИКА ТОРГА С ПОКУПАТЕЛЕМ ===
+// === МЕХАНИКА ТОРГА (РАЗ В 5 ПРОДАЖ, РАНДОМ МИНУС/ПЛЮС) ===
 window.trySellWithHaggling = function(index, baseSellPrice) {
     let item = resellerState.inventory[index];
     
-    // С вероятностью 45% покупатель устраивает торг
-    let isHaggling = Math.random() < 0.45;
+    if (resellerState.hagglingCounter === undefined) {
+        resellerState.hagglingCounter = 0;
+    }
 
-    if (isHaggling) {
-        // Покупатель просит скидку 10-20%
-        let discountPercent = Math.random() * 0.1 + 0.1; 
-        let hagglePrice = Math.floor(baseSellPrice * (1 - discountPercent));
-        let diff = baseSellPrice - hagglePrice;
+    resellerState.hagglingCounter++;
 
-        let hagglingPrompt = confirm(`💬 Покупатель пишет в чат:\n«Привет! Готов забрать "${item.title}" прямо сейчас за ${hagglePrice} BYN (-${diff} BYN от твоей цены)?»\n\nНажмите «OK», чтобы согласиться на сделку.\nНажмите «Отмена», чтобы отказаться и ждать другого клиента.`);
+    // Торг происходит примерно каждый 5-й проданный товар
+    if (resellerState.hagglingCounter >= 5) {
+        resellerState.hagglingCounter = 0;
+        
+        // 50% шанс на торг в плюс (накидывают сверху), 50% на торг в минус (просят скидку)
+        let isPlusHaggle = Math.random() < 0.5;
 
-        if (hagglingPrompt) {
-            // Игрок согласился на торг (продает дешевле)
-            executeSale(index, hagglePrice, true);
+        if (isPlusHaggle) {
+            let bonusPercent = Math.random() * 0.15 + 0.10;
+            let hagglePrice = Math.floor(baseSellPrice * (1 + bonusPercent));
+            let diff = hagglePrice - baseSellPrice;
+
+            let hagglingPrompt = confirm(`💬 Покупатель пишет в чат:\n«Слушай, очень срочно нужна вещь "${item.title}"! Готов забрать прямо сейчас и накинуть сверху +${diff} BYN, итого за ${hagglePrice} BYN?»\n\nНажмите «OK», чтобы согласиться на выгодную сделку.\nНажмите «Отмена», чтобы продать по своей цене.`);
+
+            if (hagglingPrompt) {
+                executeSale(index, hagglePrice, true, true);
+            } else {
+                executeSale(index, baseSellPrice, false, false);
+            }
         } else {
-            // Игрок отказался — покупатель уходит, но есть шанс, что цена изменится или товар останется
-            triggerHaptic('warning');
-            playSound('error');
-            alert('Покупатель отказался от вашей цены и ушел. Попробуйте продать товар позже!');
+            let discountPercent = Math.random() * 0.10 + 0.10; 
+            let hagglePrice = Math.floor(baseSellPrice * (1 - discountPercent));
+            let diff = baseSellPrice - hagglePrice;
+
+            let hagglingPrompt = confirm(`💬 Покупатель пишет в чат:\n«Привет! Готов забрать "${item.title}" прямо сейчас за ${hagglePrice} BYN (-${diff} BYN скидка)?»\n\nНажмите «OK», чтобы согласиться на быструю сделку со скидкой.\nНажмите «Отмена», чтобы отказаться.`);
+
+            if (hagglingPrompt) {
+                executeSale(index, hagglePrice, true, false);
+            } else {
+                triggerHaptic('warning');
+                playSound('error');
+                alert('Покупатель отказался от вашей цены и ушел. Попробуйте продать товар позже!');
+            }
         }
     } else {
-        // Обычная успешная продажа по полной цене
-        executeSale(index, baseSellPrice, false);
+        executeSale(index, baseSellPrice, false, false);
     }
 };
 
-function executeSale(index, sellPrice, wasHaggled) {
+function executeSale(index, sellPrice, wasHaggled, isPlus) {
     clearInterval(resellerTimerInterval);
     const item = resellerState.inventory.splice(index, 1)[0];
     resellerState.balance += sellPrice;
@@ -2840,7 +2862,11 @@ function executeSale(index, sellPrice, wasHaggled) {
     spawnResellerLot();
 
     if (wasHaggled) {
-        alert(`🤝 Сделка закрыта по предложенной цене: +${sellPrice} BYN!`);
+        if (isPlus) {
+            alert(`🔥 Успешный торг! Покупатель переплатил сверху: +${sellPrice} BYN!`);
+        } else {
+            alert(`🤝 Сделка закрыта по цене с уступкой: +${sellPrice} BYN!`);
+        }
     } else {
         alert(`🎉 Товар успешно продан за ${sellPrice} BYN!`);
     }
